@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 
 from app.config import Settings
-from app.db import create_db_engine, create_session_factory
+from app.db import create_db_engine, create_demo_schema, create_session_factory
 
 HEALTH_PATH = "/health"
 HEALTH_RESPONSE = {"status": "ok"}
@@ -42,6 +42,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.state.engine = engine
         application.state.session_factory = create_session_factory(engine)
         try:
+            create_demo_schema(engine)
             yield
         finally:
             engine.dispose()

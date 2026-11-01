@@ -7,6 +7,8 @@ from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.models import BenchmarkBase, DemoBase
+
 SQLITE_BACKEND_NAME = "sqlite"
 SQLITE_IN_MEMORY_DATABASE = ":memory:"
 SQLITE_CONNECT_EVENT = "connect"
@@ -72,3 +74,21 @@ def create_session_factory(engine: Engine) -> sessionmaker[Session]:
         engine: Engine created by `create_db_engine`.
     """
     return sessionmaker(bind=engine)
+
+
+def create_demo_schema(engine: Engine) -> None:
+    """Create the demo tables on an engine if they do not exist yet.
+
+    Args:
+        engine: Engine of the demo database.
+    """
+    DemoBase.metadata.create_all(engine)
+
+
+def create_benchmark_schema(engine: Engine) -> None:
+    """Create the benchmark tables on an engine if they do not exist yet.
+
+    Args:
+        engine: Engine of the benchmark database (`data/bench/bench.db`).
+    """
+    BenchmarkBase.metadata.create_all(engine)

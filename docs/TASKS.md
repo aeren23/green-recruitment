@@ -33,7 +33,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - `python -m bench parse-report --n 50`: for 50 random CVs, prints the section type distribution, the share of CVs without headings and the share where `years_experience` was found.
   - Acceptance: Unit tests (heading matching, entry splitting, 200-word chunking, year range merging, removal of contact information from section text). In the parse report, at least 80% of CVs have 2 or more section types found. If not, extend the heading list according to the dataset.
 
-- [ ] **T-04 Data model**
+- [x] **T-04 Data model**
   - `app/models.py`: all entities from SPEC §5, with unique constraints and cascades. Benchmark tables in a separate metadata object.
   - Acceptance: The test DB is created. A `unique(job_id, raw_hash)` violation raises an error. Deleting a profile also deletes its sections and contact information.
 
