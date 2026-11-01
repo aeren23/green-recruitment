@@ -18,6 +18,7 @@ APP_DIRECTORY = REPOSITORY_ROOT / "app"
 RETENTION_FILE = "app/privacy/retention.py"
 EMBED_FILE = "app/scoring/embed.py"
 LLM_FREE_DIRECTORIES = ("app/ingest/", "app/scoring/")
+INGEST_DIRECTORY = "app/ingest/"
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,11 @@ def is_llm_free_directory(relative_path: str) -> bool:
     return relative_path.startswith(LLM_FREE_DIRECTORIES)
 
 
+def is_ingest_directory(relative_path: str) -> bool:
+    """True for files under `app/ingest/`."""
+    return relative_path.startswith(INGEST_DIRECTORY)
+
+
 RULES = (
     Rule(
         name="deletion outside retention",
@@ -77,6 +83,13 @@ RULES = (
             re.MULTILINE,
         ),
         applies_to=is_llm_free_directory,
+    ),
+    Rule(
+        name="disk write in ingest",
+        forbidden_pattern=re.compile(
+            r"\bopen\s*\(|write_bytes|write_text|\btempfile\b|NamedTemporaryFile"
+        ),
+        applies_to=is_ingest_directory,
     ),
 )
 
@@ -130,6 +143,11 @@ def test_app_source_respects_architecture_rules() -> None:
         ("app/ingest/pdf.py", "from app.llm.ollama import Client", "llm import from ingest or scoring"),
         ("app/scoring/matrix.py", "import app.llm", "llm import from ingest or scoring"),
         ("app/scoring/filters.py", "from ..llm import x", "llm import from ingest or scoring"),
+        ("app/ingest/pdf.py", 'with open(path, "wb") as handle:', "disk write in ingest"),
+        ("app/ingest/pdf.py", "Path(name).write_bytes(pdf_bytes)", "disk write in ingest"),
+        ("app/ingest/pdf.py", "Path(name).write_text(text)", "disk write in ingest"),
+        ("app/ingest/pdf.py", "import tempfile", "disk write in ingest"),
+        ("app/ingest/normalize.py", "handle = NamedTemporaryFile()", "disk write in ingest"),
     ],
 )
 def test_scanner_detects_violations(
@@ -147,6 +165,9 @@ def test_scanner_detects_violations(
         (EMBED_FILE, "model = SentenceTransformer(name)"),
         ("app/pipeline.py", "from app.llm.ollama import Client"),
         ("app/ingest/pdf.py", "from app.config import Settings"),
+        ("app/ingest/pdf.py", "reader = PdfReader(io.BytesIO(pdf_bytes))"),
+        ("app/web/export.py", 'Path(name).write_bytes(data)\nopen(path, "wb")'),
+        ("tests/pdf_fixtures.py", "import tempfile"),
     ],
 )
 def test_scanner_allows_permitted_places(relative_path: str, source: str) -> None:

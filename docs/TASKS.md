@@ -23,7 +23,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
 
 ## Phase 1: Ingest
 
-- [ ] **T-02 PDF, normalization, hash**
+- [x] **T-02 PDF, normalization, hash**
   - `ingest/pdf.py`: text extraction from in-memory bytes. A meaningful error if no text comes out or the text is too short (<200 characters).
   - `ingest/normalize.py`: SPEC §6.2.
   - Acceptance: Tests exist. The same PDF gives the same hash twice. Differences in case or whitespace do not change the hash. `C++` and `C#` are preserved.
