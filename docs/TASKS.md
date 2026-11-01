@@ -16,7 +16,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - `pyproject.toml` (approved dependencies, excluding torch), `.env.example`, `.gitignore` (`data/`, `.env`), `app/config.py`, `app/db.py` (pragmas on every connection), `app/main.py` (lifespan, `GET /health`), empty `tests/`.
   - Acceptance: `uvicorn app.main:app` starts, `/health` returns 200, `pytest -q` runs. One test verifies that `PRAGMA secure_delete` and `foreign_keys` are both 1.
 
-- [ ] **T-01 Dataset reader**
+- [x] **T-01 Dataset reader**
   - I will download the dataset and put it under `data/raw/`. `bench/dataset.py`: an iterator producing `(id, category, pdf_path, resume_str)` records, and stratified sampling per SPEC §7.3 (with `seed`).
   - The command `python -m bench dataset-stats` prints the category distribution, the PDF count and the missing PDF count.
   - Acceptance: If the structure differs from the expectation in SPEC §7.1, stop and tell me. The same seed gives the same sample.
