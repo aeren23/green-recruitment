@@ -1,0 +1,21 @@
+---
+### 2026-11-01 23:26:49 — Claude Code
+* **Action/Task:** Read the project documents and rules, audited the local environment, resolved open questions with the user and wrote the development plan. No application code was written.
+* **Files Affected:** Created `docs/plans/development-plan.md`, modified `docs/project_log.md`. Read `docs/SPEC.md`, `docs/TASKS.md`, `docs/CLAUDE.md`, `docs/rules/coding-standarts.md`, `docs/rules/logging-standarts.md`.
+* **Details/Decisions:** User decisions: nullable `application_token` on `DecisionRecord`; 1 MB upload limit (`MAX_UPLOAD_BYTES`); re-score active `ranked` applications when a profile changes; five new endpoints with retention behind the employer cookie; move the repository outside OneDrive; about 5 days to delivery with bonuses out of scope; K1 quality threshold of baseline `precision@10` minus 0.10; no formatter or linter, a deliberate exception to coding standards section 3.6. Proposed SPEC changes are listed in plan section 4 as SC-01 to SC-14; `docs/SPEC.md` was not edited.
+* **Issues & Resolutions:** Verified conflicts: Starlette 0.38.6 spools uploads above 1 MB to disk (resolved by the upload limit); `country_iso_code` exists only on `OfflineEmissionsTracker` (SC-05); NFKC plus casefold fails on uppercase Turkish headings (separate heading folding in T-03). Open: Ollama and `sentence-transformers`/`codecarbon` are not installed, the dataset is not present, and CodeCarbon GPU energy on this laptop GPU is unproven (measurement gate in T-05).
+---
+### 2026-11-01 23:35:28 — Claude Code
+* **Action/Task:** Applied the approved SPEC changes SC-01 to SC-14 from the development plan to `docs/SPEC.md` and `docs/CLAUDE.md`, and marked the plan approved.
+* **Files Affected:** Modified `docs/SPEC.md`, `docs/CLAUDE.md`, `docs/plans/development-plan.md`, `docs/project_log.md`. Read `docs/TASKS.md`, `docs/rules/logging-standarts.md`.
+* **Details/Decisions:** SPEC now has nullable `DecisionRecord.application_token`, `MAX_UPLOAD_BYTES` (413 on oversize) and `QUALITY_K` settings, five new endpoints (employer login, shortlist, close, finalize, `POST /green/retention` behind the employer cookie), `OfflineEmissionsTracker`, status values `draft`/`ranked`/`shortlisted`, reason codes split into stored and response-only, draft redirect instead of `DUPLICATE_APPLICATION`, re-confirmation rules (kept section ids, re-scoring), unparsed `location` with a TR→EN language dictionary, stage-sum energy and duration, equal LLM options for baseline, quality-metric deduplication, grouped `bench compare`, nullable informational `closes_at`, and the `llm_calls_avoided` definition. CLAUDE.md gained `app/pipeline.py` and `bench/runner.py` in the layout and a corrected `bench compare` comment. The plan status is `Onaylandı` and all SC rows are `Uygulandı`. `docs/TASKS.md` and `docs/rules/` were not edited.
+* **Issues & Resolutions:** None
+
+---
+### 2026-11-01 23:41:41 — Claude Code
+* **Action/Task:** Completed T-00 (repo skeleton): environment, project files, FastAPI app with health endpoint, SQLite pragmas and architecture-rule tests.
+* **Files Affected:** `pyproject.toml`, `.gitignore`, `.env.example`, `.env` (local only, gitignored), `CLAUDE.md`, `app/__init__.py`, `app/config.py`, `app/db.py`, `app/main.py`, `tests/conftest.py`, `tests/test_db_pragmas.py`, `tests/test_health.py`, `tests/test_architecture_rules.py`, `docs/TASKS.md`, `docs/project_log.md`
+* **Details/Decisions:** Created `.venv` with `--system-site-packages` so the existing torch 2.6.0+cu124 (CUDA available) is reused and never touched. Dependencies are pinned to the exact installed versions, including the newly installed codecarbon 3.3.2 and sentence-transformers 6.2.0. Settings are resolved inside the app lifespan so importing `app.main` needs no `.env`. Every SQLite connection gets `foreign_keys=ON` and `secure_delete=ON` through a connect event. `tests/test_architecture_rules.py` scans `app/**/*.py` for the deletion, clock, model-loading and LLM-import rules, and its scanner is itself unit-tested with violating sources.
+* **Issues & Resolutions:** None. The pip dry run did not touch torch, and all 19 tests pass. The server started with uvicorn answered `/health` with 200 and was stopped afterwards.
+
+---
