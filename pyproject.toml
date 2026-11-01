@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["app*"]
+include = ["app*", "bench*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

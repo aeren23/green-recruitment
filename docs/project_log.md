@@ -19,3 +19,11 @@
 * **Issues & Resolutions:** None. The pip dry run did not touch torch, and all 19 tests pass. The server started with uvicorn answered `/health` with 200 and was stopped afterwards.
 
 ---
+### 2026-11-01 23:47:01 — Claude Code
+* **Action/Task:** Wrote the code for T-01 (dataset reader): `bench` package with the dataset reader, statistics, stratified sampler and the `dataset-stats` CLI command, plus tests on a synthetic tree. T-01 remains open pending the real dataset.
+* **Files Affected:** `pyproject.toml`, `bench/__init__.py`, `bench/dataset.py`, `bench/__main__.py`, `tests/test_dataset.py`, `docs/project_log.md`
+* **Details/Decisions:** Standard library only. The layout is validated eagerly in `iter_resume_records`, so a wrong structure raises `DatasetStructureError` (naming expected and found) before any row is read. The csv field limit is raised to the named constant `2**31 - 1` (not `sys.maxsize`, which overflows on Windows) and `Resume_html` is never retained. `sample_stratified` sorts eligible records by id and uses a local `random.Random(seed)`, with an ACCOUNTANT plus FINANCE combined pool and the `N % 4` remainder going to distractors. Package discovery now includes `bench*`; torch stays 2.6.0+cu124 with CUDA available. The T-01 box in `docs/TASKS.md` is intentionally not ticked: the acceptance criteria and the SPEC 7.1 structure check need the real dataset, and the date-format and contact-information notes required by the plan cannot be written without it.
+* **Issues & Resolutions:** None. All 40 tests pass. `python -m bench dataset-stats` against the empty `data/raw` prints a clean structure error to stderr and exits with code 1.
+
+
+---
