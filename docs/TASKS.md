@@ -76,7 +76,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - `app/seed.py` (the 3 postings in SPEC §7.2), template skeleton (`base.html`, `app.css`), `/employer` and `/employer/jobs/new`. Cookie check with `EMPLOYER_TOKEN`.
   - Acceptance: When a posting is created, requirement embeddings are computed once. Page weight is within budget.
 
-- [ ] **T-13 Candidate flow**
+- [x] **T-13 Candidate flow**
   - Upload → draft → preview and edit → confirm → status page. Repeat-application block, cache-hit message, "Dosyanız saklanmadı" message. After confirmation, filtering and scoring run. `GreenCounter` is updated.
   - Acceptance: Steps 2, 3 and 4 of SPEC §3 work end to end by hand. That the PDF is not written to disk is verified with a test (a temporary directory is watched).
 

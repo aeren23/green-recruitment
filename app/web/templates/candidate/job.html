@@ -1,0 +1,43 @@
+{% extends "candidate/base.html" %}
+{% block title %}{{ posting.title }} · Yeşil İşe Alım{% endblock %}
+{% block content %}
+<h1>{{ posting.title }}</h1>
+{% if posting.description %}<p>{{ posting.description }}</p>{% endif %}
+
+<h2>Zorunlu şartlar</h2>
+<dl class="filters">
+<dt>Diller</dt>
+<dd>{% if posting.required_languages %}{% for name in posting.required_languages %}{{ language_labels.get(name, name) }}{% if not loop.last %}, {% endif %}{% endfor %} (birini bilmeniz yeterli){% else %}Belirtilmedi{% endif %}</dd>
+<dt>Konum</dt>
+<dd>{% if posting.remote_ok %}Uzaktan çalışmaya uygun{% elif posting.location %}{{ posting.location }}{% else %}Belirtilmedi{% endif %}</dd>
+<dt>Asgari deneyim</dt>
+<dd>{% if posting.min_years is not none %}{{ posting.min_years|round(1) }} yıl{% else %}Belirtilmedi{% endif %}</dd>
+</dl>
+<p class="muted">Bilinmeyen bir bilgi sizi elemez. Yalnızca özgeçmişinizde yer alan ve ilanla çelişen bir değer otomatik olarak eler; diğer her şey yalnızca sıralamayı etkiler.</p>
+
+<h2>Aranan nitelikler</h2>
+<ul>
+{% for requirement in posting.requirements %}<li>{{ requirement.text }}</li>
+{% endfor %}</ul>
+
+<section class="notice" aria-labelledby="disclosure-heading">
+<h2 id="disclosure-heading">Aydınlatma metni (KVKK)</h2>
+<p>Bu başvuruda özgeçmişinizdeki bilgiler, ilanın niteliklerine uygunluğunuzu değerlendirmek amacıyla otomatik olarak işlenir. Veri sorumlusu bu ilanı yayımlayan kurumdur. Yalnızca başvuru için gerekli bilgiler tutulur; PDF dosyanız saklanmaz.</p>
+<p>Zorunlu şartlara (dil, konum, asgari deneyim) uymayan başvurular otomatik elenir; bunun dışında hiçbir başvuru yalnızca puanı düşük diye elenmez. Elenirseniz gerekçeyi başvuru durum sayfanızda görürsünüz. KVKK madde 11 uyarınca verilerinize erişme, düzeltme, silinmesini isteme ve otomatik kararlara itiraz etme haklarına sahipsiniz.</p>
+<p>Taslağınızı onaylamazsanız {{ retention.draft_ttl_hours }} saat sonra silinir. Elenme ya da seçilmeme kaydı {{ retention.decision_retention_days }} gün, kısa listeye alınan başvurular ilan kapandıktan en fazla {{ retention.shortlist_retention_days }} gün saklanır.</p>
+</section>
+
+{% if error %}
+<div class="error" role="alert"><p>{{ error }}</p></div>
+{% endif %}
+{% if is_open %}
+<form method="post" action="{{ paths.apply_path(posting.id) }}" enctype="multipart/form-data" class="stack">
+<label for="cv">Özgeçmişiniz (PDF, metin içeren, en fazla {{ upload_limit }})</label>
+<input id="cv" name="cv" type="file" accept="application/pdf,.pdf" required>
+<button type="submit">Yükle ve önizle</button>
+</form>
+<p class="muted">Yüklediğiniz dosya saklanmaz. Bir sonraki adımda çıkarılan bilgileri görüp düzeltebilirsiniz.</p>
+{% else %}
+<div class="error" role="status"><p>Bu ilan artık başvuru almıyor.</p></div>
+{% endif %}
+{% endblock %}

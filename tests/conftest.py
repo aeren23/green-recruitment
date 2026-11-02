@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from pipeline_support import ControlledEmbedder, FakeLlm
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
@@ -123,4 +124,31 @@ def web_app(test_settings: Settings, fake_embedder: FakeEmbedder) -> FastAPI:
 def web_client(web_app: FastAPI) -> Iterator[TestClient]:
     """A client that runs the lifespan and does not follow redirects."""
     with TestClient(web_app, follow_redirects=False) as client:
+        yield client
+
+
+@pytest.fixture
+def fake_llm() -> FakeLlm:
+    """A scripted LLM that records every prompt."""
+    return FakeLlm()
+
+
+@pytest.fixture
+def candidate_embedder() -> ControlledEmbedder:
+    """An embedder whose similarities come from `QSCORE<percent>` markers."""
+    return ControlledEmbedder()
+
+
+@pytest.fixture
+def candidate_app(
+    test_settings: Settings, candidate_embedder: ControlledEmbedder, fake_llm: FakeLlm
+) -> FastAPI:
+    """The application with the controlled embedder and the fake LLM."""
+    return create_app(test_settings, candidate_embedder, fake_llm)
+
+
+@pytest.fixture
+def candidate_client(candidate_app: FastAPI) -> Iterator[TestClient]:
+    """A client for the candidate pages; redirects are not followed."""
+    with TestClient(candidate_app, follow_redirects=False) as client:
         yield client

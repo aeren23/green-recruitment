@@ -1,0 +1,78 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1057 >>
+stream
+BT
+/F1 12 Tf
+14 TL
+50 750 Td
+(Ada Example) Tj
+T*
+(ada.example@example.com  +90 555 010 20 30) Tj
+T*
+(Summary) Tj
+T*
+(Backend developer with about five years of experience designing REST APIs) Tj
+T*
+(and relational databases for small teams. Comfortable owning a service) Tj
+T*
+(from design to deployment.) Tj
+T*
+(Experience) Tj
+T*
+(Backend Developer, Fictional Labs, 2024 - Present) Tj
+T*
+(Built and operated REST APIs in Python and FastAPI. Designed PostgreSQL) Tj
+T*
+(schemas and wrote SQL reports. Added automated tests and Docker based) Tj
+T*
+(deployments.) Tj
+T*
+(Software Developer, Sample Software, 2023 - 2024) Tj
+T*
+(Maintained internal web services and improved slow SQL queries.) Tj
+T*
+(Junior Developer, Demo Systems, 2022 - 2023) Tj
+T*
+(Implemented small features in a Python web application and fixed bugs.) Tj
+T*
+(Education) Tj
+T*
+(BSc Computer Engineering, Example University, 2017 - 2021) Tj
+T*
+(Skills) Tj
+T*
+(Python, FastAPI, SQL, PostgreSQL, Docker, Git, REST API design, unit testing) Tj
+T*
+(Languages) Tj
+T*
+(English, Turkish) Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001350 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1420
+%%EOF

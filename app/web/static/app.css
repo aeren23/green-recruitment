@@ -119,3 +119,32 @@ th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid var(--borde
 }
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.notice {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  margin: 0.75rem 0;
+}
+.notice h2 { font-size: 1.1rem; margin: 0.25rem 0; }
+.notice ul { margin: 0.25rem 0; padding-left: 1.25rem; }
+
+.warning {
+  background: var(--error-bg);
+  color: var(--error-text);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+}
+
+.job-list { list-style: none; padding: 0; }
+.job-list li { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; }
+.job-list p { margin: 0.25rem 0 0; }
+
+.filters { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+.filters dt { font-weight: 600; }
+.filters dd { margin: 0; }
+
+.section-row { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.75rem; }
+.section-row select { align-self: flex-start; }

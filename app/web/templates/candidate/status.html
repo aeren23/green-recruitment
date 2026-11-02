@@ -1,0 +1,26 @@
+{% extends "candidate/base.html" %}
+{% block title %}Başvuru durumu · Yeşil İşe Alım{% endblock %}
+{% block content %}
+<h1>Başvuru durumu</h1>
+{% if view.job_title %}<p>İlan: <strong>{{ view.job_title }}</strong></p>{% endif %}
+{% set kind = view.kind.value %}
+{% if kind == "draft" %}
+<p class="notice"><strong>Onayınızı bekliyor.</strong> Başvurunuz henüz değerlendirmeye alınmadı.</p>
+<p><a class="button" href="{{ paths.draft_path(token) }}">Önizlemeye git</a></p>
+{% elif kind == "ranked" %}
+<p class="notice"><strong>Değerlendirmede.</strong> Başvurunuz alındı ve ilanın niteliklerine göre sıralandı. İlan kapandığında sonucu bu sayfada görebilirsiniz.</p>
+{% elif kind == "shortlisted" %}
+<p class="notice"><strong>Kısa listeye alındınız.</strong> İşveren iletişim bilgilerinizi görebilir ve sizinle iletişime geçebilir.</p>
+{% elif kind == "eliminated" %}
+<div class="error" role="status">
+<p><strong>Elendiniz.</strong></p>
+<p>{{ reasons[view.reason_code] }}</p>
+</div>
+<p class="muted">Bu karar, ilanın zorunlu şartlarına göre otomatik olarak verildi. KVKK madde 11 uyarınca kararın gerekçesini öğrenme ve bu karara itiraz etme hakkınız vardır; talebinizi ilanı yayımlayan kuruma iletebilirsiniz. Bu kayıt {{ retention.decision_retention_days }} gün saklanır.</p>
+{% elif kind == "not_selected" %}
+<p class="notice"><strong>Bu ilan için seçilmediniz.</strong> İlan kapandı ve başvurunuz kısa listeye alınmadı. Özgeçmişinize ait veriler silindi.</p>
+{% else %}
+<p class="notice">Bu başvurunun kaydı saklama süresi dolduğu için silindi.</p>
+{% endif %}
+<p><a href="{{ paths.HOME_PATH }}">Açık ilanlara dön</a></p>
+{% endblock %}

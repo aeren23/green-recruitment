@@ -1,0 +1,20 @@
+{% extends "candidate/base.html" %}
+{% from "_pagination.html" import pager %}
+{% block title %}Açık ilanlar · Yeşil İşe Alım{% endblock %}
+{% block content %}
+<h1>Açık ilanlar</h1>
+{% if page.items %}
+<ul class="job-list">
+{% for posting in page.items %}
+<li>
+<a href="{{ paths.job_path(posting.id) }}">{{ posting.title }}</a>
+{% if posting.description %}<p class="muted">{{ posting.description|truncate(160) }}</p>{% endif %}
+</li>
+{% endfor %}
+</ul>
+<p class="muted">Toplam {{ page.total }} açık ilan.</p>
+{{ pager(page, list_path) }}
+{% else %}
+<p>Şu anda açık ilan yok.</p>
+{% endif %}
+{% endblock %}

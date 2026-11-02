@@ -20,6 +20,7 @@ EMBED_FILE = "app/scoring/embed.py"
 LLM_FREE_DIRECTORIES = ("app/ingest/", "app/scoring/")
 INGEST_DIRECTORY = "app/ingest/"
 PIPELINE_DIRECTORY = "app/pipeline/"
+WEB_DIRECTORY = "app/web/"
 PIPELINE_MODULE = "app/pipeline/upload.py"
 SUMMARY_MODULE = "app/pipeline/summaries.py"
 DISK_WRITE_PATTERN = re.compile(
@@ -66,6 +67,11 @@ def is_pipeline(relative_path: str) -> bool:
     return relative_path.startswith(PIPELINE_DIRECTORY)
 
 
+def is_web(relative_path: str) -> bool:
+    """True for every module of the `app/web/` package."""
+    return relative_path.startswith(WEB_DIRECTORY)
+
+
 RULES = (
     Rule(
         name="deletion outside retention",
@@ -104,6 +110,11 @@ RULES = (
         name="disk write in pipeline",
         forbidden_pattern=DISK_WRITE_PATTERN,
         applies_to=is_pipeline,
+    ),
+    Rule(
+        name="disk write in web",
+        forbidden_pattern=DISK_WRITE_PATTERN,
+        applies_to=is_web,
     ),
     # The green pipeline calls the LLM only through `summarize_candidate`
     # (the top-k summary); the baseline scoring task and raw client calls are
@@ -173,6 +184,9 @@ def test_app_source_respects_architecture_rules() -> None:
         ("app/ingest/pdf.py", "import tempfile", "disk write in ingest"),
         ("app/ingest/normalize.py", "handle = NamedTemporaryFile()", "disk write in ingest"),
         (PIPELINE_MODULE, "Path(name).write_bytes(upload.pdf_bytes)", "disk write in pipeline"),
+        ("app/web/routes_candidate.py", "Path(name).write_bytes(pdf_bytes)", "disk write in web"),
+        ("app/web/routes_candidate.py", "import tempfile", "disk write in web"),
+        ("app/web/routes_candidate.py", 'open(path, "wb")', "disk write in web"),
         ("app/pipeline/confirm.py", "import tempfile", "disk write in pipeline"),
         ("app/pipeline/profile_edits.py", 'open(path, "wb")', "disk write in pipeline"),
         (SUMMARY_MODULE, "score_cv_with_llm(client, prompt_input, usage)", "baseline llm in green pipeline"),
@@ -200,7 +214,7 @@ def test_scanner_detects_violations(
         ("bench/baseline.py", "score_cv_with_llm(client, prompt_input, usage)"),
         ("app/ingest/pdf.py", "from app.config import Settings"),
         ("app/ingest/pdf.py", "reader = PdfReader(io.BytesIO(pdf_bytes))"),
-        ("app/web/export.py", 'Path(name).write_bytes(data)\nopen(path, "wb")'),
+        ("bench/export.py", 'Path(name).write_bytes(data)\nopen(path, "wb")'),
         ("tests/pdf_fixtures.py", "import tempfile"),
     ],
 )

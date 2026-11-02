@@ -1,0 +1,60 @@
+{% extends "candidate/base.html" %}
+{% block title %}Önizleme · Yeşil İşe Alım{% endblock %}
+{% block content %}
+<h1>Özgeçmişinizi gözden geçirin</h1>
+<p>İlan: <strong>{{ preview.job_title }}</strong></p>
+<p class="notice"><strong>Dosyanız saklanmadı.</strong> Aşağıdaki bilgiler yüklediğiniz PDF'den çıkarıldı.</p>
+{% if cache_hit %}<p class="notice">Önceki başvurunuzdan alındı, yeniden işlenmedi.</p>{% endif %}
+{% if no_headings %}<p class="warning" role="alert">Özgeçmişinizde bölüm başlığı bulunamadı; tüm metin tek bir bölüm olarak alındı. Lütfen bölümleri aşağıdan düzeltin.</p>{% endif %}
+{% if errors %}
+<div class="error" role="alert">
+<p>Başvuru kaydedilemedi:</p>
+<ul>
+{% for message in errors %}<li>{{ message }}</li>
+{% endfor %}</ul>
+</div>
+{% endif %}
+<p class="muted">Taslağınız {{ preview.expires_at.strftime("%d.%m.%Y %H:%M") }} (UTC) tarihine kadar geçerlidir; onaylamazsanız silinir.</p>
+
+<form method="post" action="{{ paths.draft_path(token) }}" class="stack">
+<fieldset>
+<legend>Bölümler</legend>
+<p class="muted">Bir bölümün metnini boşaltırsanız silinir. Sondaki boş satırlarla yeni bölüm ekleyebilirsiniz. E-posta ve telefon numaraları bölümlerden otomatik temizlenir.</p>
+{% for row in form.rows %}
+<div class="section-row">
+<label class="visually-hidden" for="section-type-{{ loop.index }}">Bölüm {{ loop.index }} türü</label>
+<select id="section-type-{{ loop.index }}" name="section_type">
+{% for value, label in section_options %}<option value="{{ value }}"{% if row.type == value %} selected{% endif %}>{{ label }}</option>
+{% endfor %}</select>
+<label class="visually-hidden" for="section-text-{{ loop.index }}">Bölüm {{ loop.index }} metni</label>
+<textarea id="section-text-{{ loop.index }}" name="section_text" rows="{{ 6 if row.text else 3 }}">{{ row.text }}</textarea>
+</div>
+{% endfor %}
+</fieldset>
+
+<fieldset>
+<legend>Profil</legend>
+<label for="years_experience">Toplam deneyim (yıl)</label>
+<input id="years_experience" name="years_experience" value="{{ form.years }}" inputmode="decimal">
+<label for="languages">Diller (virgülle ayırın)</label>
+<input id="languages" name="languages" value="{{ form.languages }}" placeholder="İngilizce, Türkçe">
+<label for="location">Konum (bilmiyorsanız boş bırakın)</label>
+<input id="location" name="location" value="{{ form.location }}">
+</fieldset>
+
+<fieldset>
+<legend>İletişim bilgileri</legend>
+<p class="muted">Bu bilgileri yalnızca siz görürsünüz. İşveren ancak sizi kısa listeye aldığında görür.</p>
+<label for="contact_name">Ad</label>
+<input id="contact_name" name="contact_name" value="{{ form.contact_name }}" autocomplete="off">
+<label for="contact_email">E-posta</label>
+<input id="contact_email" name="contact_email" value="{{ form.contact_email }}" autocomplete="off">
+<label for="contact_phone">Telefon</label>
+<input id="contact_phone" name="contact_phone" value="{{ form.contact_phone }}" autocomplete="off">
+</fieldset>
+
+{% include "candidate/_retention.html" %}
+
+<button type="submit">Onayla ve başvur</button>
+</form>
+{% endblock %}

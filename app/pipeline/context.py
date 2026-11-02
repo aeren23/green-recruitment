@@ -172,6 +172,8 @@ class ConfirmOutcome:
             the same profile that were re-scored because its sections changed
             (SC-03).
         summaries_generated: Top-k summaries written by this call.
+        affected_job_ids: Postings whose ranking this call touched; a caller
+            that confirmed without an LLM refreshes their top-k summaries later.
     """
 
     kind: ConfirmOutcomeKind
@@ -181,3 +183,4 @@ class ConfirmOutcome:
     reason_code: StoredReasonCode | None
     rescored_applications: int = 0
     summaries_generated: int = 0
+    affected_job_ids: tuple[int, ...] = ()

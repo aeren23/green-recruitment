@@ -24,6 +24,10 @@ def build_environment() -> Environment:
     )
     environment.globals["paths"] = paths
     environment.globals["status_labels"] = messages.STATUS_LABELS
+    environment.globals["section_options"] = [
+        (section_type.value, label)
+        for section_type, label in messages.SECTION_TYPE_LABELS.items()
+    ]
     return environment
 
 

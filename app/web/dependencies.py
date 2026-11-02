@@ -8,6 +8,7 @@ from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 from app.config import Settings
+from app.green.tracker import StageTracker
 from app.scoring.embed import EmbeddingProvider
 
 
@@ -21,6 +22,7 @@ class WebContext:
         now: The injected clock (timezone-aware UTC).
         embedder: The embedding model loaded once in the lifespan.
         settings: The application settings.
+        tracker: The stage tracker; always the no-op one in the web layer (D3).
     """
 
     request: Request
@@ -28,6 +30,7 @@ class WebContext:
     now: datetime
     embedder: EmbeddingProvider
     settings: Settings
+    tracker: StageTracker
 
 
 def get_settings(request: Request) -> Settings:
@@ -58,4 +61,5 @@ def get_web_context(
         now=now,
         embedder=request.app.state.embedder,
         settings=request.app.state.settings,
+        tracker=request.app.state.tracker,
     )

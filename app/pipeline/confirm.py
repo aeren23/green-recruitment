@@ -34,6 +34,7 @@ class ConfirmCounts:
 
     rescored: int
     summaries: int
+    job_ids: tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -89,7 +90,7 @@ def confirm_draft(context: PipelineContext, confirm_input: ConfirmInput) -> Conf
         application.confirmed_at = context.now
     job_ids = sorted({target.job_id for target in targets})
     summaries = fill_top_k_summaries(context, job_ids)
-    counts = ConfirmCounts(rescored=len(siblings), summaries=summaries)
+    counts = ConfirmCounts(len(siblings), summaries, tuple(job_ids))
     return build_confirm_outcome(identity, application, reason, counts)
 
 
@@ -116,6 +117,7 @@ def build_confirm_outcome(
         reason_code=reason,
         rescored_applications=counts.rescored,
         summaries_generated=counts.summaries,
+        affected_job_ids=counts.job_ids,
     )
 
 
