@@ -19,6 +19,12 @@ RETENTION_FILE = "app/privacy/retention.py"
 EMBED_FILE = "app/scoring/embed.py"
 LLM_FREE_DIRECTORIES = ("app/ingest/", "app/scoring/")
 INGEST_DIRECTORY = "app/ingest/"
+PIPELINE_DIRECTORY = "app/pipeline/"
+PIPELINE_MODULE = "app/pipeline/upload.py"
+SUMMARY_MODULE = "app/pipeline/summaries.py"
+DISK_WRITE_PATTERN = re.compile(
+    r"\bopen\s*\(|write_bytes|write_text|\btempfile\b|NamedTemporaryFile"
+)
 
 
 @dataclass(frozen=True)
@@ -55,6 +61,11 @@ def is_ingest_directory(relative_path: str) -> bool:
     return relative_path.startswith(INGEST_DIRECTORY)
 
 
+def is_pipeline(relative_path: str) -> bool:
+    """True for every module of the `app/pipeline/` package."""
+    return relative_path.startswith(PIPELINE_DIRECTORY)
+
+
 RULES = (
     Rule(
         name="deletion outside retention",
@@ -86,10 +97,23 @@ RULES = (
     ),
     Rule(
         name="disk write in ingest",
-        forbidden_pattern=re.compile(
-            r"\bopen\s*\(|write_bytes|write_text|\btempfile\b|NamedTemporaryFile"
-        ),
+        forbidden_pattern=DISK_WRITE_PATTERN,
         applies_to=is_ingest_directory,
+    ),
+    Rule(
+        name="disk write in pipeline",
+        forbidden_pattern=DISK_WRITE_PATTERN,
+        applies_to=is_pipeline,
+    ),
+    # The green pipeline calls the LLM only through `summarize_candidate`
+    # (the top-k summary); the baseline scoring task and raw client calls are
+    # not allowed in it.
+    Rule(
+        name="baseline llm in green pipeline",
+        forbidden_pattern=re.compile(
+            r"score_cv_with_llm|BaselinePromptInput|build_baseline_prompt|\.generate\s*\("
+        ),
+        applies_to=is_pipeline,
     ),
 )
 
@@ -139,7 +163,7 @@ def test_app_source_respects_architecture_rules() -> None:
         ("app/models.py", "from sqlalchemy import delete", "deletion outside retention"),
         ("app/db.py", 'run("delete from sections")', "deletion outside retention"),
         (RETENTION_FILE, "now = datetime.now()", "datetime.now in retention"),
-        ("app/pipeline.py", "SentenceTransformer(name)", "SentenceTransformer outside embed"),
+        ("app/pipeline/scoring.py", "SentenceTransformer(name)", "SentenceTransformer outside embed"),
         ("app/ingest/pdf.py", "from app.llm.ollama import Client", "llm import from ingest or scoring"),
         ("app/scoring/matrix.py", "import app.llm", "llm import from ingest or scoring"),
         ("app/scoring/filters.py", "from ..llm import x", "llm import from ingest or scoring"),
@@ -148,6 +172,14 @@ def test_app_source_respects_architecture_rules() -> None:
         ("app/ingest/pdf.py", "Path(name).write_text(text)", "disk write in ingest"),
         ("app/ingest/pdf.py", "import tempfile", "disk write in ingest"),
         ("app/ingest/normalize.py", "handle = NamedTemporaryFile()", "disk write in ingest"),
+        (PIPELINE_MODULE, "Path(name).write_bytes(upload.pdf_bytes)", "disk write in pipeline"),
+        ("app/pipeline/confirm.py", "import tempfile", "disk write in pipeline"),
+        ("app/pipeline/profile_edits.py", 'open(path, "wb")', "disk write in pipeline"),
+        (SUMMARY_MODULE, "score_cv_with_llm(client, prompt_input, usage)", "baseline llm in green pipeline"),
+        (SUMMARY_MODULE, "client.generate(prompt)", "baseline llm in green pipeline"),
+        ("app/pipeline/scoring.py", "build_baseline_prompt(prompt_input)", "baseline llm in green pipeline"),
+        ("app/pipeline/confirm.py", "BaselinePromptInput(requirements, cv_text)", "baseline llm in green pipeline"),
+        ("app/pipeline/upload.py", "session.delete(application)", "deletion outside retention"),
     ],
 )
 def test_scanner_detects_violations(
@@ -163,7 +195,9 @@ def test_scanner_detects_violations(
         (RETENTION_FILE, "session.delete(row)\nDELETE FROM sections"),
         (RETENTION_FILE, "def purge(now):\n    return now"),
         (EMBED_FILE, "model = SentenceTransformer(name)"),
-        ("app/pipeline.py", "from app.llm.ollama import Client"),
+        (SUMMARY_MODULE, "from app.llm.ollama import Client"),
+        (SUMMARY_MODULE, "from app.llm.tasks import summarize_candidate"),
+        ("bench/baseline.py", "score_cv_with_llm(client, prompt_input, usage)"),
         ("app/ingest/pdf.py", "from app.config import Settings"),
         ("app/ingest/pdf.py", "reader = PdfReader(io.BytesIO(pdf_bytes))"),
         ("app/web/export.py", 'Path(name).write_bytes(data)\nopen(path, "wb")'),
@@ -183,3 +217,17 @@ def test_directory_walk_reports_violation_with_posix_path(tmp_path: Path) -> Non
     (web_directory / "clean.py").write_text("VALUE = 1\n", encoding="utf-8")
     violations = scan_directory(tmp_path / "app", tmp_path)
     assert violations == {"app/web/offender.py": ["deletion outside retention"]}
+
+
+def test_pipeline_is_a_package_and_every_module_is_scanned() -> None:
+    """The pipeline-specific rules reach all modules; no stray `app/pipeline.py` remains."""
+    package = APP_DIRECTORY / "pipeline"
+    assert (package / "__init__.py").is_file()
+    assert not (APP_DIRECTORY / "pipeline.py").exists()
+    relative_paths = [
+        path.relative_to(REPOSITORY_ROOT).as_posix() for path in package.glob("*.py")
+    ]
+    assert len(relative_paths) > 1
+    for relative_path in relative_paths:
+        assert is_pipeline(relative_path)
+        assert "disk write in pipeline" in find_violations(relative_path, "import tempfile")

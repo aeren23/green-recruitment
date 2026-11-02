@@ -55,7 +55,7 @@ app/
   db.py              SQLAlchemy engine, SQLite pragmas
   models.py          ORM entities (SPEC §5)
   seed.py            demo job postings
-  pipeline.py        the SPEC §6.1 flow, shared by the web layer and bench
+  pipeline/          the SPEC §6.1 flow, shared by the web layer and bench
   ingest/            pdf.py, normalize.py, sections.py, contact.py
   scoring/           embed.py, filters.py, matrix.py
   llm/               ollama.py, prompts.py
