@@ -8,13 +8,14 @@ benchmark runs read it back to compute
 import argparse
 import json
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
 
 from app.config import Settings
 from app.green.tracker import CodeCarbonStageTracker, TaskReading
+from bench.cuda_context import CudaContextHolder, TorchCudaContextHolder
 
 IDLE_COMMAND = "idle"
 IDLE_HELP = "Measure idle power (W) and store it in data/bench/idle_power.json."
@@ -28,6 +29,10 @@ SECONDS_PER_HOUR = 3600.0
 ENCODING = "utf-8"
 HANDLER_DESTINATION = "handler"
 COUNTRY_ISO_FIELD = "country_iso"
+CUDA_CONTEXT_NOTE = "cuda_context={state}"
+CUDA_HELD = "held"
+CUDA_NONE = "none"
+NOTES_SEPARATOR = "; "
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -143,14 +148,32 @@ def format_idle_record(record: IdlePowerRecord) -> str:
     )
 
 
+def measure_with_cuda_context(
+    tracker: IdleMeter, seconds: float, holder: CudaContextHolder
+) -> IdlePowerRecord:
+    """Measure idle power while this process holds a CUDA context (decision D2).
+
+    The runners hold a context during their runs, so idle power is measured
+    under the same condition. The holder is always released.
+    """
+    held = holder.acquire()
+    try:
+        record = run_idle_measurement(tracker, seconds, datetime.now(UTC))
+    finally:
+        holder.release()
+    state = CUDA_CONTEXT_NOTE.format(state=CUDA_HELD if held else CUDA_NONE)
+    notes = NOTES_SEPARATOR.join([record.measurement_notes, state])
+    return replace(record, measurement_notes=notes)
+
+
 def run_idle(arguments: argparse.Namespace) -> int:
     """Handle `idle`: measure with CodeCarbon, save, print."""
     default_country = Settings.model_fields[COUNTRY_ISO_FIELD].default
     try:
-        record = run_idle_measurement(
+        record = measure_with_cuda_context(
             CodeCarbonStageTracker(default_country),
             arguments.seconds,
-            datetime.now(UTC),
+            TorchCudaContextHolder(),
         )
     except IdleDataError as error:
         print(f"{ERROR_PREFIX}{error}", file=sys.stderr)

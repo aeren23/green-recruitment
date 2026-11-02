@@ -75,11 +75,16 @@ class StageTotals:
         energy_wh: Energy in watt-hours, summed over every call.
         duration_s: Wall-clock seconds, summed over every call.
         count: Number of times the stage ran.
+        emissions_kg: CodeCarbon's per-task emissions in kilograms of CO2,
+            summed over every call.
+        gpu_energy_wh: The GPU share of `energy_wh`, summed over every call.
     """
 
     energy_wh: float = 0.0
     duration_s: float = 0.0
     count: int = 0
+    emissions_kg: float = 0.0
+    gpu_energy_wh: float = 0.0
 
 
 @dataclass
@@ -89,6 +94,8 @@ class TaskReading:
     energy_wh: float = 0.0
     duration_s: float = 0.0
     closed: bool = False
+    emissions_kg: float = 0.0
+    gpu_energy_wh: float = 0.0
 
 
 class StageTracker(Protocol):
@@ -274,6 +281,8 @@ class CodeCarbonStageTracker:
             logger.warning("CodeCarbon returned no data for %s", self._active_stage)
             return
         reading.energy_wh = emissions.energy_consumed * KWH_TO_WH
+        reading.gpu_energy_wh = emissions.gpu_energy * KWH_TO_WH
+        reading.emissions_kg = emissions.emissions
 
     def _accumulate(self, name: str, reading: TaskReading) -> None:
         """Add one reading to the running totals of its stage."""
@@ -283,6 +292,8 @@ class CodeCarbonStageTracker:
             energy_wh=previous.energy_wh + reading.energy_wh,
             duration_s=previous.duration_s + reading.duration_s,
             count=previous.count + 1,
+            emissions_kg=previous.emissions_kg + reading.emissions_kg,
+            gpu_energy_wh=previous.gpu_energy_wh + reading.gpu_energy_wh,
         )
 
 

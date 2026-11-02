@@ -37,6 +37,8 @@ from bench.idle import (
 )
 
 FAKE_POWER_W = 3600.0
+FAKE_GPU_SHARE = 0.25
+FAKE_KG_CO2_PER_KWH = 0.5
 SECONDS_PER_HOUR = 3600.0
 WH_PER_KWH = 1000.0
 SHORT_SLEEP_S = 0.05
@@ -94,7 +96,11 @@ class FakeEmissionsTracker:
         if self.stop_returns_none:
             return None
         kilowatt_hours = FAKE_POWER_W * elapsed / SECONDS_PER_HOUR / WH_PER_KWH
-        return SimpleNamespace(energy_consumed=kilowatt_hours)
+        return SimpleNamespace(
+            energy_consumed=kilowatt_hours,
+            gpu_energy=kilowatt_hours * FAKE_GPU_SHARE,
+            emissions=kilowatt_hours * FAKE_KG_CO2_PER_KWH,
+        )
 
 
 @pytest.fixture
@@ -151,6 +157,21 @@ def test_two_stages_are_reported_separately(tracker: CodeCarbonStageTracker) -> 
     assert totals["embed"].energy_wh == pytest.approx(
         expected_energy_wh(totals["embed"].duration_s), rel=0.2
     )
+
+
+def test_emissions_and_gpu_energy_accumulate_per_stage(
+    tracker: CodeCarbonStageTracker,
+) -> None:
+    for _ in range(2):
+        with tracker.stage("embed"):
+            time.sleep(SHORT_SLEEP_S / 5)
+    totals = tracker.totals()["embed"]
+    assert totals.count == 2
+    assert totals.gpu_energy_wh == pytest.approx(totals.energy_wh * FAKE_GPU_SHARE)
+    assert totals.emissions_kg == pytest.approx(
+        totals.energy_wh / WH_PER_KWH * FAKE_KG_CO2_PER_KWH
+    )
+    assert totals.emissions_kg > 0
 
 
 def test_count_and_totals_accumulate(tracker: CodeCarbonStageTracker) -> None:
