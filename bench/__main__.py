@@ -17,6 +17,7 @@ from bench.dataset import (
     compute_dataset_stats,
     iter_resume_records,
 )
+from bench.idle import register_idle
 
 PROGRAM_NAME = "python -m bench"
 SUBCOMMAND_DESTINATION = "command"
@@ -68,7 +69,10 @@ def register_dataset_stats(
     parser.set_defaults(**{HANDLER_DESTINATION: run_dataset_stats})
 
 
-COMMAND_REGISTRARS: tuple[SubparserRegistrar, ...] = (register_dataset_stats,)
+COMMAND_REGISTRARS: tuple[SubparserRegistrar, ...] = (
+    register_dataset_stats,
+    register_idle,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:

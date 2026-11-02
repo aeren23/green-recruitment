@@ -46,7 +46,7 @@ Esas kapsam SPEC ve TASKS'tır. Bu plan görev sırasını değiştirmez ve TASK
 | CodeCarbon (master) | `start_task` zamanlayıcıyı durdurur, enerji `stop_task` anında hesaplanır | Kısa aşamalarda dağılım güvenilir olmayabilir; bkz. R-02 |
 | Türkçe başlıklar | NFKC + casefold ile denenen 8 başlıktan 6'sı eşleşmedi (`DENEYİM`, `HAKKIMDA` vb.) | Başlık eşleme için ayrı katlama gerekir; T-03 |
 | Güç planı | Etkin plan "Güç tasarrufu" | Ölçüm öncesi "Dengeli" seçilir (U-4) |
-| CPU ölçümü | Intel Power Gadget kurulu değil; kaynaklara göre Windows'ta CodeCarbon tahmine düşüyor | CPU enerjisinin tahmin olması bekleniyor, T-05 doğrular ve raporda yazılır (SPEC §11) |
+| CPU ölçümü | CPU enerjisi Windows Energy Meter Interface'ten (donanım sayacı, `RAPL_Package0_PKG`) geliyor; RAM enerjisi sabit modeldir (15,77 GB için 10 W) | T-05'te doğrulandı; `measurement_notes` ve raporda yazılır (SPEC §11) |
 | Git | Commit yok, uzak depo boş, yerel dal `master` | İlk commit öncesi dal yeniden adlandırılır |
 | CLAUDE.md | `docs/` altında; oturum başında otomatik yüklenmez ve `docs/rules`'a atıf vermiyor | T-00'da kökte içe aktarma dosyası oluşturulur |
 
@@ -216,7 +216,10 @@ Kabul kriterleri `docs/TASKS.md`'dedir. Aşağıdakiler ek uygulama notlarıdır
 - **T-09 Yeşil hat** (önce plan modu)
   - `app/pipeline.py`, `app/seed.py` ilan verisi, `bench/runner.py`, `bench/scenario.py` ve `bench/green.py` yazılır. Retention bölümü §4'teki tabloya göre yazılır.
   - CLI seçenekleri: `--jobs-per-cv`, `--resubmit-rate`, `--seed`, `--repeats`. Her koşu yeni veritabanıyla başlar.
+  - D2: ölçen süreç koşu boyunca bir CUDA bağlamı tutar (NVML takılmasını önlemek için).
+  - D4: koşu başında ve sonunda bir GPU toplam enerji sayacı okunur ve aşamalar üzerinden toplanan GPU enerjisinin yanında raporlanır (kısa GPU aşamaları eksik sayılır). Yeni bağımlılık eklenmez; `nvidia-smi` ya da kurulu araçlarla yapılamıyorsa T-09'da bildirilir.
 - **T-10 Baseline** (önce plan modu)
+  - D2: ölçen süreç koşu boyunca bir CUDA bağlamı tutar; aksi halde NVML takılması baseline brüt enerjisini ve süresini şişirir, karşılaştırma yeşil lehine yanlı olur.
   - Çağrı başına süre ölçülür ve T-17'deki N bundan hesaplanır. U-4 koşulları burada başlar.
 - **T-11 Kalite ve rapor**
   - SC-10 ve SC-11 uygulanır. Rapor gruplanmış ortalama ± sapma üretir.
@@ -228,6 +231,7 @@ Kabul kriterleri `docs/TASKS.md`'dedir. Aşağıdakiler ek uygulama notlarıdır
   - §7.2 yalnızca `min_years` veriyor. Demo ilanlarına dil ve konum değerleri eklenir; benchmark'ta bu filtreler kapalı kalır.
   - `/employer/login` eklenir (SC-04). Çerez `HttpOnly` ve `SameSite=Lax`; token `secrets.compare_digest` ile karşılaştırılır.
 - **T-13 Aday akışı** (önce plan modu)
+  - D3: web katmanı `GREEN_TRACKING` ne olursa olsun her zaman `NoOpStageTracker` kullanır; rapor sayıları benchmark'tan gelir (SPEC 1) ve tracker iş parçacığı güvenli değildir.
   - Gövde akışı sayılarak D-02 uygulanır. Test `MAX_UPLOAD_BYTES ≤ MultiPartParser.max_file_size` koşulunu da doğrular, böylece Starlette güncellemesi kuralı sessizce bozamaz.
   - Limit üstü yüklemenin reddedildiği ve geçici dosya oluşmadığı test edilir, yalnızca küçük PDF ile yetinilmez.
   - Yeniden onayda bölüm metni tekrar temizlenir; aday e-postayı bölüme yazarsa `profile_json`'a girmez.
@@ -245,12 +249,14 @@ Kabul kriterleri `docs/TASKS.md`'dedir. Aşağıdakiler ek uygulama notlarıdır
 ### Faz 5: Final ölçüm ve teslim
 
 - **T-17 Final benchmark**
+  - D2: boşta ölçümü dahil ölçen süreç tüm koşu boyunca bir CUDA bağlamı tutar.
+  - D5: ölçüm kapısı (`measurement-gate.md`) "Dengeli" güç planında tekrarlanır; %5 tracker maliyeti kontrolü gerçek LLM çağrılarıyla yeniden değerlendirilir (K1).
   - Kod dondurulur ve commit özeti `measurement_notes`'a yazılır. Boşta ölçümü Ollama ve e5 belleğe yüklüyken yapılır, böylece sabit VRAM tüketimi işe atfedilmez.
   - N şu formülle seçilir, baseline bütçesi bir gecede 6 saattir:
     - `N = min(300, 2250 / çağrı_başına_saniye)`
     - Varsayım: iki senaryo ve üç tekrarda N başına yaklaşık 9.6 LLM çağrısı. Örnek: 5 sn/çağrıda N=300, 15 sn/çağrıda N=150.
 - **T-18 README**
-  - TASKS'taki sınırlamalara ek olarak şunlar yazılır: Windows'ta CPU enerjisinin tahmin olması, kısa aşama dağılımının yaklaşık olması, aynı PDF'e sahip kişinin onaylı profil verisini önizlemede görebilmesi.
+  - TASKS'taki sınırlamalara ek olarak şunlar yazılır: RAM enerjisinin sabit model tahmini olması (CPU enerjisi donanım sayacından gelir), kısa aşama dağılımının yaklaşık olması, aynı PDF'e sahip kişinin onaylı profil verisini önizlemede görebilmesi.
 
 ## 8. Kapılar
 
@@ -298,9 +304,9 @@ Push ve `main`'e birleştirme yalnızca kullanıcı istediğinde yapılır. Doğ
 
 | No | Risk | Etki | Önlem |
 |---|---|---|---|
-| R-01 | CodeCarbon bu dizüstü GPU'sunda enerji okuyamaz | LLM enerjisi görünmez, iddia ölçülemez | §8.1 kapısı; çözüm gerekirse kullanıcıya sorulur |
-| R-02 | Kısa aşamaların enerji dağılımı güvenilmez, tracker maliyeti yeşil hattı daha çok etkiler | Aşama tablosu yanıltır | §8.1 kapısı; toplam enerji esas alınır, kısa aşamalar raporda yaklaşık işaretlenir |
-| R-03 | CPU enerjisi tahminidir | Mutlak değerler kesin değildir | `measurement_notes` ve raporda açıkça belirtilir |
+| R-01 | CodeCarbon bu dizüstü GPU'sunda enerji okuyamaz | LLM enerjisi görünmez, iddia ölçülemez | Gerçekleşmedi (T-05): NVML sayacı destekleniyor, CodeCarbon GPU enerjisi `nvidia-smi` integralinin %1,4 ve %2,2 üstünde |
+| R-02 | Kısa aşamaların enerji dağılımı güvenilmez, tracker maliyeti yeşil hattı daha çok etkiler | Aşama tablosu yanıltır | Doğrulandı (T-05): yaklaşık 100 ms altındaki aşamalarda GPU enerjisi eksik sayılıyor (50 ms'de %78). GPU boştayken NVML okuması yaklaşık 0,55 s takılıyor; CUDA bağlamı varsa seyrek. Kararlar D1 (aşama başına izleme kalır, toplam ve net enerji esas, kısa aşamalar "yaklaşık") ve D2 (ölçen süreçte CUDA bağlamı tutulur); bkz. `measurement-gate.md` |
+| R-03 | CPU enerjisi tahminidir | Mutlak değerler kesin değildir | T-05: CPU enerjisi donanım sayacından (Windows EMI) gelir, tahmin değildir; RAM enerjisi sabit model tahminidir. `measurement_notes` ve raporda açıkça belirtilir |
 | R-04 | `years_experience` düşük bulunur | `MIN_YEARS` filtresi etkisiz kalır, K1 yanıltır | T-01 bulgusu ve T-03 %60 hedefi |
 | R-05 | 4 GB VRAM'e LLM ve e5 sığmaz, LLM kısmen CPU'ya kayar | Süre ve enerji profili değişir | `ollama ps` kontrolü; durum `measurement_notes`'a yazılır |
 | R-06 | Baseline süresi gece penceresini aşar | Final ölçüm yetişmez | T-10'daki süre ölçümü ve T-17 formülü |
