@@ -80,7 +80,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - Upload → draft → preview and edit → confirm → status page. Repeat-application block, cache-hit message, "Dosyanız saklanmadı" message. After confirmation, filtering and scoring run. `GreenCounter` is updated.
   - Acceptance: Steps 2, 3 and 4 of SPEC §3 work end to end by hand. That the PDF is not written to disk is verified with a test (a temporary directory is watched).
 
-- [ ] **T-14 Retention and KVKK**
+- [x] **T-14 Retention and KVKK**
   - `privacy/retention.py`: R1–R5 from SPEC §8.3, refcount, the `now` parameter. The posting-close endpoint.
   - Acceptance: A test for each rule. It is tested that when a profile has applications to two postings and is eliminated from one, the profile is not deleted. Within the DecisionRecord period, a repeat application to the same posting is blocked.
 

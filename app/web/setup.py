@@ -11,6 +11,7 @@ from app.web.auth import EmployerLoginRequired, redirect_to_login
 from app.web.paths import STATIC_URL_PATH
 from app.web.routes_candidate import candidate_router
 from app.web.routes_employer import employer_router, login_router
+from app.web.routes_employer_postings import postings_action_router
 from app.web.static_files import CachedStaticFiles
 from app.web.templating import STATIC_DIRECTORY
 from app.web.upload_limit import UploadSizeLimitMiddleware
@@ -32,4 +33,5 @@ def install_web(application: FastAPI) -> None:
     application.add_exception_handler(EmployerLoginRequired, redirect_to_login)
     application.include_router(login_router)
     application.include_router(employer_router)
+    application.include_router(postings_action_router)
     application.include_router(candidate_router)

@@ -1,21 +1,27 @@
 """FastAPI application factory and lifespan."""
 
-from collections.abc import AsyncIterator
+import logging
+from collections.abc import AsyncIterator, Callable
 from contextlib import ExitStack, asynccontextmanager
+from datetime import UTC, datetime
 
 import httpx
 from fastapi import APIRouter, FastAPI
+from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.db import create_db_engine, create_demo_schema, create_session_factory
 from app.green.tracker import NoOpStageTracker
 from app.llm.ollama import LlmClient, OllamaClient, OllamaConfig
+from app.privacy.retention import RetentionPolicy, run as run_retention
 from app.scoring.embed import EmbeddingProvider, create_embedder
 from app.web.access_log import install_access_log_masking
 from app.web.setup import install_web
 
 HEALTH_PATH = "/health"
 HEALTH_RESPONSE = {"status": "ok"}
+
+logger = logging.getLogger(__name__)
 
 health_router = APIRouter()
 
@@ -24,6 +30,30 @@ health_router = APIRouter()
 def health() -> dict[str, str]:
     """Report that the service is up."""
     return HEALTH_RESPONSE
+
+
+def run_startup_retention(
+    session_factory: Callable[[], Session], settings: Settings
+) -> None:
+    """Apply the time-driven retention rules once at start-up (SPEC 8.3, T14-3).
+
+    A failure must not keep the application from starting, so only the
+    exception class is logged (never its message, which could carry data).
+    """
+    try:
+        with session_factory() as session:
+            policy = RetentionPolicy.from_settings(settings)
+            report = run_retention(session, datetime.now(UTC), policy)
+            session.commit()
+    except Exception as error:
+        logger.error("Start-up retention failed: %s", type(error).__name__)
+        return
+    logger.info(
+        "Start-up retention deleted drafts=%d shortlisted=%d decisions=%d",
+        report.expired_drafts,
+        report.released_shortlists,
+        report.expired_decisions,
+    )
 
 
 def resolve_embedder(
@@ -96,6 +126,7 @@ def create_app(
             application.state.engine = engine
             application.state.session_factory = create_session_factory(engine)
             create_demo_schema(engine)
+            run_startup_retention(application.state.session_factory, resolved_settings)
             yield
 
     application = FastAPI(lifespan=lifespan)

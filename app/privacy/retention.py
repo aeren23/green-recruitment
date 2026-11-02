@@ -1,9 +1,9 @@
-"""Minimal retention of SPEC section 8.3: R2, R3, the R1 rule for one draft and
-the profile reference count.
+"""Retention of SPEC section 8.3: rules R1 to R5 and the profile reference count.
 
-R4, R5 and the `run()` entry point belong to T-14. Every deletion in the
-application goes through this module, so the reference count and the decision
-records cannot be bypassed.
+R2 (elimination) and R3 (closing a posting) are event-driven; R1, R4 and R5 are
+time-driven and applied together by `run()`. Every deletion in the application
+goes through this module, so the reference count and the decision records
+cannot be bypassed.
 
 Conventions:
     * The clock is injected as `RetentionContext.now`; this module never reads
@@ -23,6 +23,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, inspect, select
 from sqlalchemy.orm import Session
 
+from app.config import Settings
 from app.green.counters import CounterName, increment_counter
 from app.models import (
     Application,
@@ -47,8 +48,56 @@ class PostingNotFoundError(LookupError):
     """The job posting does not exist."""
 
 
+class PostingNotClosedError(RuntimeError):
+    """A posting that is still open was asked to be finalized (T14-2)."""
+
+
 class ApplicationNotDraftError(RuntimeError):
     """An operation that applies to drafts only was given another application."""
+
+
+@dataclass(frozen=True)
+class RetentionPolicy:
+    """The retention periods that `run()` applies.
+
+    Attributes:
+        draft_ttl_hours: `DRAFT_TTL_HOURS` (R1).
+        shortlist_retention_days: `SHORTLIST_RETENTION_DAYS` (R4).
+        decision_retention_days: `DECISION_RETENTION_DAYS` (sets `expires_at`).
+    """
+
+    draft_ttl_hours: int
+    shortlist_retention_days: int
+    decision_retention_days: int
+
+    @classmethod
+    def from_settings(cls, settings: Settings) -> "RetentionPolicy":
+        """The policy configured in the application settings."""
+        return cls(
+            draft_ttl_hours=settings.draft_ttl_hours,
+            shortlist_retention_days=settings.shortlist_retention_days,
+            decision_retention_days=settings.decision_retention_days,
+        )
+
+
+@dataclass(frozen=True)
+class RetentionReport:
+    """What one `run()` deleted, per rule (applications or decision records).
+
+    Attributes:
+        expired_drafts: R1, drafts past their time to live.
+        released_shortlists: R4, shortlisted applications of finished postings.
+        expired_decisions: R5, decision records past `expires_at`.
+    """
+
+    expired_drafts: int = 0
+    released_shortlists: int = 0
+    expired_decisions: int = 0
+
+    @property
+    def total(self) -> int:
+        """Deleted applications and decision records over all rules."""
+        return self.expired_drafts + self.released_shortlists + self.expired_decisions
 
 
 @dataclass(frozen=True)
@@ -118,7 +167,8 @@ def close_posting(context: RetentionContext, job_id: int) -> int:
     """Rule R3: close a posting and turn its `ranked` applications into decisions.
 
     Each `ranked` application gets a `NOT_SELECTED` decision record and is
-    deleted. Drafts and shortlisted applications are left alone. Idempotent:
+    deleted. Drafts of the posting are deleted without a record (SC-22: they can
+    no longer be confirmed). Shortlisted applications are left alone. Idempotent:
     a second call changes nothing and returns 0, and an already closed or
     finalized posting keeps its status and `closed_at`.
 
@@ -141,8 +191,58 @@ def close_posting(context: RetentionContext, job_id: int) -> int:
     ranked = _ranked_applications(context.session, job_id)
     for application in ranked:
         eliminate_application(context, application, StoredReasonCode.NOT_SELECTED)
+    _discard_drafts_of_posting(context, job_id)
     logger.info("Posting %d closed: %d ranked applications not selected", job_id, len(ranked))
     return len(ranked)
+
+
+def finalize_posting(context: RetentionContext, job_id: int) -> None:
+    """Mark a closed posting `finalized`, which makes R4 apply to it (T14-2).
+
+    Only a closed posting can be finalized, so R3 has already written the
+    `NOT_SELECTED` records. Finalizing a finalized posting changes nothing.
+
+    Args:
+        context: Session, injected clock and decision retention period.
+        job_id: Id of the posting to finalize.
+
+    Raises:
+        PostingNotFoundError: If the posting does not exist.
+        PostingNotClosedError: If the posting is still open. Nothing is changed.
+    """
+    posting = context.session.get(JobPosting, job_id)
+    if posting is None:
+        raise PostingNotFoundError(f"Job posting {job_id} does not exist.")
+    if posting.status is JobStatus.OPEN:
+        raise PostingNotClosedError(f"Job posting {job_id} must be closed first.")
+    if posting.status is JobStatus.CLOSED:
+        posting.status = JobStatus.FINALIZED
+        posting.finalized_at = context.now
+        logger.info("Posting %d finalized", job_id)
+
+
+def run(session: Session, now: datetime, policy: RetentionPolicy) -> RetentionReport:
+    """Apply the time-driven rules R1, R4 and R5 (R2 and R3 are event-driven).
+
+    Idempotent: a second call with the same `now` deletes nothing. Does not
+    commit; the caller owns the transaction.
+
+    Args:
+        session: Session whose transaction the caller owns.
+        now: The injected clock (timezone-aware UTC).
+        policy: The retention periods.
+
+    Returns:
+        How many rows each rule deleted.
+    """
+    context = RetentionContext(session, now, policy.decision_retention_days)
+    return RetentionReport(
+        expired_drafts=_expire_drafts(context, policy.draft_ttl_hours),
+        released_shortlists=_release_shortlists(
+            context, policy.shortlist_retention_days
+        ),
+        expired_decisions=_expire_decisions(context),
+    )
 
 
 def expire_draft(context: RetentionContext, application: Application) -> None:
@@ -181,6 +281,57 @@ def discard_replaced_sections(
         context.session.delete(section)
     context.session.flush()
     _count_deleted(context, len(sections))
+
+
+def _expire_drafts(context: RetentionContext, ttl_hours: int) -> int:
+    """Rule R1 for every draft whose `created_at + ttl_hours < now`."""
+    cutoff = context.now - timedelta(hours=ttl_hours)
+    statement = select(Application).where(
+        Application.status == ApplicationStatus.DRAFT,
+        Application.created_at < cutoff,
+    )
+    drafts = list(context.session.scalars(statement))
+    for draft in drafts:
+        _remove_application(context, draft)
+    return len(drafts)
+
+
+def _discard_drafts_of_posting(context: RetentionContext, job_id: int) -> None:
+    """SC-22: delete the drafts of a posting that was just closed, with no record."""
+    statement = select(Application).where(
+        Application.job_id == job_id,
+        Application.status == ApplicationStatus.DRAFT,
+    )
+    for draft in list(context.session.scalars(statement)):
+        _remove_application(context, draft)
+
+
+def _release_shortlists(context: RetentionContext, retention_days: int) -> int:
+    """Rule R4: delete shortlisted applications of finished postings, no record."""
+    cutoff = context.now - timedelta(days=retention_days)
+    finished_jobs = select(JobPosting.id).where(
+        (JobPosting.status == JobStatus.FINALIZED)
+        | ((JobPosting.status == JobStatus.CLOSED) & (JobPosting.closed_at < cutoff))
+    )
+    statement = select(Application).where(
+        Application.status == ApplicationStatus.SHORTLISTED,
+        Application.job_id.in_(finished_jobs),
+    )
+    shortlisted = list(context.session.scalars(statement))
+    for application in shortlisted:
+        _remove_application(context, application)
+    return len(shortlisted)
+
+
+def _expire_decisions(context: RetentionContext) -> int:
+    """Rule R5: delete decision records whose `expires_at < now`."""
+    statement = select(DecisionRecord).where(DecisionRecord.expires_at < context.now)
+    records = list(context.session.scalars(statement))
+    for record in records:
+        context.session.delete(record)
+    context.session.flush()
+    _count_deleted(context, len(records))
+    return len(records)
 
 
 def _is_persistent(application: Application) -> bool:

@@ -184,15 +184,12 @@ def test_r2_rejects_a_response_only_reason_and_changes_nothing(
     assert count_rows(demo_session, DecisionRecord) == 0
 
 
-def test_r3_not_selected_for_ranked_only_and_draft_is_untouched(
+def test_r3_not_selected_for_ranked_only_and_shortlisted_is_untouched(
     demo_session: Session,
 ) -> None:
-    """Closing turns ranked applications into decisions; drafts and shortlisted stay."""
+    """Closing turns ranked applications into decisions; shortlisted stay (drafts: SC-22)."""
     posting = make_posting(demo_session, "A")
     ranked = make_application(demo_session, posting, make_profile(demo_session, "h1"))
-    draft = make_application(
-        demo_session, posting, make_profile(demo_session, "h2"), ApplicationStatus.DRAFT
-    )
     shortlisted = make_application(
         demo_session, posting, make_profile(demo_session, "h3"), ApplicationStatus.SHORTLISTED
     )
@@ -207,8 +204,8 @@ def test_r3_not_selected_for_ranked_only_and_draft_is_untouched(
     assert record.reason_code == StoredReasonCode.NOT_SELECTED.value
     assert record.application_token == ranked_token
     remaining = {application.id for application in demo_session.scalars(select(Application))}
-    assert remaining == {draft.id, shortlisted.id}
-    assert count_rows(demo_session, CandidateProfile) == 2
+    assert remaining == {shortlisted.id}
+    assert count_rows(demo_session, CandidateProfile) == 1
 
 
 def test_close_posting_is_idempotent(demo_session: Session) -> None:

@@ -302,13 +302,13 @@ The `bench compare` command groups runs by identical `scenario_json`, computes m
 
 ### 8.3 Rules
 
-`retention.run(session, now)` applies the rules below. All are idempotent.
+`retention.run(session, now, policy)` applies the rules below. `policy` carries the three retention periods from settings. All are idempotent.
 
 | Rule | Trigger | Action |
 |---|---|---|
 | R1 | `draft` application, `created_at + DRAFT_TTL_HOURS < now` | Application deleted, no DecisionRecord written, profile refcount |
 | R2 | Elimination by hard filter (immediate) | DecisionRecord(reason, `application_token` = the application's `draft_token`), Application deleted, profile refcount |
-| R3 | Posting `closed` | for `ranked` applications DecisionRecord(`NOT_SELECTED`, `application_token` = the application's `draft_token`), Application deleted, profile refcount |
+| R3 | Posting `closed` | for `ranked` applications DecisionRecord(`NOT_SELECTED`, `application_token` = the application's `draft_token`), Application deleted, profile refcount. The posting's `draft` applications are deleted at the same time, with no DecisionRecord, since a draft of a closed posting can no longer be confirmed (SC-22) |
 | R4 | Posting `finalized`, or `closed_at + SHORTLIST_RETENTION_DAYS < now` | `shortlisted` applications deleted, profile refcount |
 | R5 | `DecisionRecord.expires_at < now` | Record deleted |
 

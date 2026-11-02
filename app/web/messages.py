@@ -111,3 +111,12 @@ FORM_INCOMPLETE = (
     "Form eksik ya da bozuk gönderildi; hiçbir değişiklik kaydedilmedi. "
     "Lütfen bilgileri kontrol edip tekrar gönderin."
 )
+
+# Posting lifecycle (T-14). Notices travel as a whitelisted query flag, never as text.
+NOTICE_CLOSED = "closed"
+NOTICE_FINALIZED = "finalized"
+POSTING_NOTICES = {
+    NOTICE_CLOSED: "İlan kapatıldı. Sıralanan adaylar için karar kaydı yazıldı.",
+    NOTICE_FINALIZED: "İlan sonuçlandırıldı. Kısa listedeki başvurular silindi.",
+}
+FINALIZE_REQUIRES_CLOSED = "İlan sonuçlandırılamadı: önce ilanı kapatmalısınız."

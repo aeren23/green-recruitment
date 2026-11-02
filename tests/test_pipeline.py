@@ -276,14 +276,14 @@ def test_an_expired_draft_is_replaced_by_a_new_one(world: World) -> None:
 
 
 def test_closed_posting_rejects_uploads_and_confirmations(world: World) -> None:
-    """A closed posting accepts neither new uploads nor pending confirmations."""
+    """A closed posting takes no new uploads; its draft is gone (SC-22), so it cannot be confirmed."""
     posting = world.postings[BACKEND_DEVELOPER_TITLE]
     draft = world.submit(BACKEND_DEVELOPER_TITLE, build_cv_pdf("alpha"))
     close_posting(RetentionContext(world.session, NOW, DECISION_RETENTION_DAYS), posting.id)
 
     with pytest.raises(PostingClosedError):
         world.submit(BACKEND_DEVELOPER_TITLE, build_cv_pdf("beta"))
-    with pytest.raises(PostingClosedError):
+    with pytest.raises(DraftNotFoundError):
         world.confirm(draft.draft_token)
 
 

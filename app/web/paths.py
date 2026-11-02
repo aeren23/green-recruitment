@@ -50,3 +50,23 @@ def draft_path(token: str, cache_hit: bool = False, no_headings: bool = False) -
 def application_path(token: str) -> str:
     """Path of an application's status page."""
     return APPLICATION_PATH_TEMPLATE.format(token=token)
+
+
+EMPLOYER_CLOSE_PATH_TEMPLATE = "/employer/jobs/{job_id}/close"
+EMPLOYER_FINALIZE_PATH_TEMPLATE = "/employer/jobs/{job_id}/finalize"
+NOTICE_QUERY_PARAMETER = "notice"
+
+
+def employer_close_path(job_id: int) -> str:
+    """Path that closes a posting (R3)."""
+    return EMPLOYER_CLOSE_PATH_TEMPLATE.format(job_id=job_id)
+
+
+def employer_finalize_path(job_id: int) -> str:
+    """Path that finalizes a closed posting (R4)."""
+    return EMPLOYER_FINALIZE_PATH_TEMPLATE.format(job_id=job_id)
+
+
+def employer_home_with_notice(notice: str) -> str:
+    """The postings list with a notice flag the page translates into text."""
+    return f"{EMPLOYER_HOME_PATH}?{NOTICE_QUERY_PARAMETER}={notice}"

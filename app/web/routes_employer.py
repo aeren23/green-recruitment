@@ -93,14 +93,33 @@ def logout() -> Response:
 def list_postings(
     context: WebContext = Depends(get_web_context),
     page: str | None = Query(None),
+    notice: str | None = Query(None),
 ) -> Response:
     """The postings, newest first, one page at a time."""
+    return render_postings_list(
+        context, page, notice=messages.POSTING_NOTICES.get(notice or "")
+    )
+
+
+def render_postings_list(
+    context: WebContext,
+    page_number: str | None,
+    notice: str | None = None,
+    error: str | None = None,
+    status_code: int = 200,
+) -> Response:
+    """Render the postings list, optionally with a notice or an error message."""
     statement = select(JobPosting).order_by(
         JobPosting.created_at.desc(), JobPosting.id.desc()
     )
-    postings = paginate(context.session, statement, parse_page_number(page))
-    values = {"page": postings, "list_path": paths.EMPLOYER_HOME_PATH}
-    return render_page(context.request, POSTINGS_TEMPLATE, values)
+    postings = paginate(context.session, statement, parse_page_number(page_number))
+    values = {
+        "page": postings,
+        "list_path": paths.EMPLOYER_HOME_PATH,
+        "notice": notice,
+        "error": error,
+    }
+    return render_page(context.request, POSTINGS_TEMPLATE, values, status_code)
 
 
 @employer_router.get("/jobs/new", response_class=HTMLResponse)
