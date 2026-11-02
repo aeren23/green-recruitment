@@ -47,7 +47,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - `scoring/embed.py`: the model is loaded once in lifespan. `query:` and `passage:` prefixes, `normalize_embeddings=True`, batch processing, conversion to and from float32 BLOB. Reuse of sections by `text_hash` match.
   - Acceptance: On a second confirmation with the same section text, no embedding is computed (tested via the counter). Calling before the model is loaded raises a clear error.
 
-- [ ] **T-07 Hard filter and matrix score**
+- [x] **T-07 Hard filter and matrix score**
   - `scoring/filters.py`: SPEC §6.4, with the rule "unknown is not a reason for elimination". `scoring/matrix.py`: SPEC §6.5, pure numpy.
   - Acceptance: Tests with small hand-built vectors. An evidence section beats a claim section at the same similarity. Weights affect the score correctly. An empty section list gives score 0. For each filter, the elimination, pass and unknown cases are tested.
 
