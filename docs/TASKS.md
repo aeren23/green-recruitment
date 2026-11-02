@@ -28,7 +28,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - `ingest/normalize.py`: SPEC §6.2.
   - Acceptance: Tests exist. The same PDF gives the same hash twice. Differences in case or whitespace do not change the hash. `C++` and `C#` are preserved.
 
-- [ ] **T-03 Section splitter and contact extraction**
+- [x] **T-03 Section splitter and contact extraction**
   - `ingest/sections.py` and `ingest/contact.py`: SPEC §6.3. `years_experience` is computed by merging overlapping ranges.
   - `python -m bench parse-report --n 50`: for 50 random CVs, prints the section type distribution, the share of CVs without headings and the share where `years_experience` was found.
   - Acceptance: Unit tests (heading matching, entry splitting, 200-word chunking, year range merging, removal of contact information from section text). In the parse report, at least 80% of CVs have 2 or more section types found. If not, extend the heading list according to the dataset.

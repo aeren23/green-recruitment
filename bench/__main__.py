@@ -18,6 +18,7 @@ from bench.dataset import (
     iter_resume_records,
 )
 from bench.idle import register_idle
+from bench.parse_report import register_parse_report
 
 PROGRAM_NAME = "python -m bench"
 SUBCOMMAND_DESTINATION = "command"
@@ -72,6 +73,7 @@ def register_dataset_stats(
 COMMAND_REGISTRARS: tuple[SubparserRegistrar, ...] = (
     register_dataset_stats,
     register_idle,
+    register_parse_report,
 )
 
 

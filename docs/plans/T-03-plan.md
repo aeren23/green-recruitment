@@ -1,6 +1,6 @@
 # T-03 Planı: Bölüm Ayırıcı ve İletişim Çıkarımı
 
-- **Durum:** Onay bekliyor (TASKS: T-03 için kod öncesi plan onayı zorunlu)
+- **Durum:** Onaylandı (SC-15 ile SC-20 dahil)
 - **Girdiler:** `docs/plans/dataset-findings.md`, SPEC §6.3, TASKS T-03
 - **Yöntem notu:** Bulgular 200 PDF'lik örnekten geliyor. Ana oranları farklı tohumla seçilen 300 PDF'te ayrıca doğruladım (tire kuralı %15, `to` kalıbı %95, boşluk satırı payı %19).
 

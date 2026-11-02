@@ -1,6 +1,7 @@
 """Application settings loaded from environment variables and the `.env` file."""
 
 import math
+from datetime import date
 from typing import Literal
 
 from pydantic import Field, field_validator
@@ -9,6 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.models import SectionType
 
 ENV_FILE_NAME = ".env"
+DEFAULT_BENCH_CV_REFERENCE_DATE = date(2018, 1, 1)
 SECTION_ALPHA_ENTRY_SEPARATOR = ","
 SECTION_ALPHA_KEY_VALUE_SEPARATOR = ":"
 
@@ -100,6 +102,8 @@ class Settings(BaseSettings):
     )
     country_iso: str = "TUR"
     green_tracking: bool = True
+    # Fixed parse date for the benchmark (SPEC 6.3, 7.3); the dataset predates it.
+    bench_cv_reference_date: date = DEFAULT_BENCH_CV_REFERENCE_DATE
 
     @field_validator("section_alpha")
     @classmethod

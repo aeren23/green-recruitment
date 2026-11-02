@@ -143,23 +143,26 @@ upload (in memory) → extract_text → normalize → raw_hash
 
 ### 6.3 Section splitting (rule-based, no LLM)
 
-Heading matching is at the start of a line, case-insensitive (English and Turkish). The Turkish headings below are matched literally against Turkish CVs and must stay in Turkish:
+A line is a heading only if the whole line, after trimming and without a trailing `:`, equals a heading below. The match is case-insensitive with Turkish-aware folding (`DENEYİM` matches `deneyim`), so a sentence such as "Experience in Python" is not a heading. The Turkish headings below are matched literally against Turkish CVs and must stay in Turkish:
 
 | type | headings |
 |---|---|
-| summary | summary, profile, objective, about, özet, hakkımda |
-| skills | skills, technical skills, core competencies, qualifications, skill highlights, yetenekler, beceriler, yetkinlikler |
+| summary | summary, profile, objective, about, professional summary, executive profile, career overview, career focus, professional profile, accomplishments, additional information, özet, hakkımda |
+| skills | skills, technical skills, core competencies, qualifications, skill highlights, highlights, core qualifications, yetenekler, beceriler, yetkinlikler |
 | experience | experience, work experience, work history, professional experience, employment, deneyim, iş deneyimi |
 | project | projects, personal projects, projeler |
 | education | education, education and training, eğitim |
 | certification | certifications, certificates, licenses, sertifikalar |
 | languages | languages, diller (not embedded, goes into the `languages` column) |
+| ignored | interests, affiliations, professional affiliations, personal information (text is neither stored nor embedded) |
 
 Rules:
-- `experience` and `project` sections are split into entries by date lines or blank lines. Each entry becomes its own `Section` row.
+- Text before the first heading becomes `summary`. Lines without a letter or digit, mojibake residue and zero-width characters are noise and are dropped, except a lone dash line, which may be the separator of a date range (pypdf puts it on its own line).
+- `experience` and `project` sections are split into entries at the start of each date range. A short title-like line (at most 8 words, no terminal sentence punctuation) directly before the date range belongs to the new entry. Lines holding only whitespace are never separators; a real blank line separates entries only in a section that has no dates. Each entry becomes its own `Section` row.
 - An entry longer than 200 words is split into 200-word chunks (the e5-small limit is 512 tokens).
 - `skills` is kept as a single section.
-- `years_experience`: year ranges in experience entries (`2015 - 2019`, `2018 - Present|Current|Now|Günümüz`) are extracted, overlapping ranges are merged, and the total is taken. If no range is found, `None`.
+- `years_experience`: date ranges in experience entries only (education dates are not counted) are extracted. Separators are `-`, en dash, `to` and `through`; formats are `YYYY`, `MM/YYYY` and `Month YYYY`; end words are `Present`, `Current`, `Now`, `Günümüz`. A range may span several lines. Months are used when present; a year-only start or end means January of that year, and an open end means the month of `reference_date`. Intervals are clipped to `reference_date`, a range whose end precedes its start is ignored, overlapping ranges are merged, and the total months are divided by 12 and rounded to one decimal. If no range is found, `None`.
+- `reference_date`: the parser takes it as an argument. The web layer passes today's date; the benchmark passes the fixed `BENCH_CV_REFERENCE_DATE` (§10), so results are reproducible and a `Current` end in a dataset from about 2018 does not inflate experience.
 - `location` is not parsed: the parser leaves it null and the candidate enters it in the preview.
 - `languages` entries are mapped through a small TR→EN dictionary (for example `ingilizce` → `english`) so they match `required_languages`.
 - If no heading is found, the whole text becomes a single `summary` section and a warning is shown to the candidate in the preview.
@@ -240,6 +243,7 @@ In the benchmark, the language and location filters are off, because these field
 - Each CV applies to `jobs_per_cv` postings (default 2, chosen randomly among the 3 postings).
 - `resubmit_rate` (default 0.1): this share of applications are repeat applications with the same CV to the same posting.
 - In the green pipeline the preview step is auto-confirmed (the candidate makes no corrections).
+- CV parsing uses the fixed `reference_date` `BENCH_CV_REFERENCE_DATE` (§10, default 2018-01-01) instead of today, because the dataset's CVs date from about 2018 or earlier and a `Current` end would otherwise inflate `years_experience` by roughly eight years. The report states this as a limitation.
 - Scenario parameters are stored as `scenario_json`. Because the cache gain depends on these parameters, the report contains at least two scenarios: `jobs_per_cv=1, resubmit_rate=0` and the default scenario.
 
 ### 7.4 Pipelines and stage names
@@ -364,6 +368,7 @@ SHORTLIST_RETENTION_DAYS=30
 SECTION_ALPHA=experience:1.0,project:1.0,certification:0.8,education:0.8,summary:0.7,skills:0.6
 COUNTRY_ISO=TUR
 GREEN_TRACKING=true
+BENCH_CV_REFERENCE_DATE=2018-01-01
 ```
 
 ## 11. Risks and open questions
