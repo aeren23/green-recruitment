@@ -99,7 +99,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - Idle measurement, two scenarios (SPEC §7.3), N=300 (or as much as time allows), 3 repeats each. A projection for 1 million applications per year is added to the report, stated as an estimate.
   - Acceptance: `report.md` is ready to go into the presentation.
 
-- [ ] **T-18 README**
+- [x] **T-18 README**
   - Installation, running, measurement protocol, limitations (TDP estimate, M left out, language and location filters off in the benchmark, small baseline model).
 
 ## Bonus (if time remains)
