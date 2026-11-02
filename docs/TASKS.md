@@ -43,7 +43,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - `app/green/tracker.py`: a `stage(name)` context manager. It wraps the CodeCarbon task API and accumulates per-stage energy (Wh) and duration. With `GREEN_TRACKING=false` it becomes a zero-cost no-op. `python -m bench idle --seconds N` measures idle power.
   - Acceptance: The task API names are verified against the installed CodeCarbon version. In one test, two stages are reported separately using `time.sleep` (the tracker may be mocked in the test). The `measurement_notes` field contains the CPU measurement method.
 
-- [ ] **T-06 Embedding service**
+- [x] **T-06 Embedding service**
   - `scoring/embed.py`: the model is loaded once in lifespan. `query:` and `passage:` prefixes, `normalize_embeddings=True`, batch processing, conversion to and from float32 BLOB. Reuse of sections by `text_hash` match.
   - Acceptance: On a second confirmation with the same section text, no embedding is computed (tested via the counter). Calling before the model is loaded raises a clear error.
 
