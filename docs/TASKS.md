@@ -51,7 +51,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - `scoring/filters.py`: SPEC §6.4, with the rule "unknown is not a reason for elimination". `scoring/matrix.py`: SPEC §6.5, pure numpy.
   - Acceptance: Tests with small hand-built vectors. An evidence section beats a claim section at the same similarity. Weights affect the score correctly. An empty section list gives score 0. For each filter, the elimination, pass and unknown cases are tested.
 
-- [ ] **T-08 LLM client**
+- [x] **T-08 LLM client**
   - `llm/ollama.py` and `llm/prompts.py`: the baseline scoring prompt (JSON output) and the green summary prompt (selected sections only). Token counters, timeout, graceful error when Ollama is down.
   - Acceptance: Tests with mocks. If malformed JSON comes back, the baseline score is retried once; if it still fails, it is recorded as `score=None` and counted.
 
