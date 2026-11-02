@@ -84,3 +84,25 @@ def employer_application_path(application_id: int) -> str:
 def employer_shortlist_path(application_id: int) -> str:
     """Path that shortlists a ranked application."""
     return EMPLOYER_SHORTLIST_PATH_TEMPLATE.format(application_id=application_id)
+
+
+GREEN_PATH = "/green"
+GREEN_RETENTION_PATH = "/green/retention"
+RETENTION_DAYS_FIELD = "days"
+RETENTION_DRAFTS_PARAMETER = "drafts"
+RETENTION_SHORTLISTS_PARAMETER = "shortlists"
+RETENTION_DECISIONS_PARAMETER = "decisions"
+RETENTION_SHIFT_PARAMETER = "shifted"
+
+
+def green_with_retention_result(
+    shifted_days: int, drafts: int, shortlists: int, decisions: int
+) -> str:
+    """The panel with the per-rule counts of a retention run as integer query values."""
+    query = (
+        f"{RETENTION_SHIFT_PARAMETER}={shifted_days}"
+        f"&{RETENTION_DRAFTS_PARAMETER}={drafts}"
+        f"&{RETENTION_SHORTLISTS_PARAMETER}={shortlists}"
+        f"&{RETENTION_DECISIONS_PARAMETER}={decisions}"
+    )
+    return f"{GREEN_PATH}?{query}"

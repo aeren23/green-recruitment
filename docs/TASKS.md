@@ -88,7 +88,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - `/employer/jobs/{id}` (paginated, anonymous, relative score, "missing information" marker) and `/employer/applications/{id}` (matrix table, evidence/claim marker, summary). Shortlisting and revealing contact information. When the top-k changes, summaries are generated only for the new top-k candidates.
   - Acceptance: Contact information appears in no employer response outside the shortlist (tested on the response HTML).
 
-- [ ] **T-16 Green panel**
+- [x] **T-16 Green panel**
   - `/green`: live counters, the latest comparison table from `bench.db`, `pageweight` middleware averages, a "Run retention" button and a "fast-forward +N days" field.
   - Acceptance: The demo scenario in SPEC §3 runs from start to finish without problems.
   - **→ MVP line.**

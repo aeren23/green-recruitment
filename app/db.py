@@ -92,3 +92,20 @@ def create_benchmark_schema(engine: Engine) -> None:
         engine: Engine of the benchmark database (`data/bench/bench.db`).
     """
     BenchmarkBase.metadata.create_all(engine)
+
+
+VACUUM_STATEMENT = "VACUUM"
+AUTOCOMMIT_ISOLATION = "AUTOCOMMIT"
+
+
+def vacuum_database(engine: Engine) -> None:
+    """Rebuild the database file so freed pages are given back (SPEC 8.3).
+
+    `VACUUM` cannot run inside a transaction, so the connection is switched to
+    autocommit. The caller must have committed or closed its own sessions first.
+
+    Args:
+        engine: Engine of the demo database.
+    """
+    with engine.connect().execution_options(isolation_level=AUTOCOMMIT_ISOLATION) as connection:
+        connection.exec_driver_sql(VACUUM_STATEMENT)

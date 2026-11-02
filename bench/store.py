@@ -9,12 +9,15 @@ quality columns (`precision_at_k`, `overlap_at_k`) of a stored run.
 """
 
 import json
+import sqlite3
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import create_engine, select
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 
 from app.db import create_benchmark_schema, create_db_engine, create_session_factory
 from app.models import BenchmarkRun, PipelineName, StageMeasurement
@@ -34,6 +37,7 @@ RANKING_PIPELINE = "pipeline"
 RANKING_POSTINGS = "postings"
 RANKING_RECORD_ID = "record_id"
 RANKING_SCORE = "score"
+SQLITE_MEMORY_URL = "sqlite://"
 PRECISION_ATTRIBUTE = "precision_at_k"
 OVERLAP_ATTRIBUTE = "overlap_at_k"
 
@@ -73,6 +77,18 @@ class BenchPaths:
 def sqlite_url(path: Path) -> str:
     """SQLAlchemy URL of a SQLite file."""
     return f"sqlite:///{path.as_posix()}"
+
+
+def read_only_engine(path: Path) -> Engine:
+    """An engine whose connections open the file read-only (`mode=ro` URI).
+
+    Writing through it fails, and a missing file is never created. The caller
+    owns the engine and must dispose it.
+    """
+    uri = f"{path.resolve().as_uri()}?mode=ro"
+    return create_engine(
+        SQLITE_MEMORY_URL, creator=lambda: sqlite3.connect(uri, uri=True)
+    )
 
 
 def rankings_payload(run_id: int, record: RunRecord) -> dict[str, object]:
@@ -157,6 +173,12 @@ def to_stored_run(row: BenchmarkRun) -> StoredRun:
         measurement_notes=row.measurement_notes,
         stages=stages,
     )
+
+
+def read_runs(session: Session) -> list[StoredRun]:
+    """All `BenchmarkRun` rows of a session, oldest first, as `StoredRun`."""
+    rows = session.scalars(select(BenchmarkRun).order_by(BenchmarkRun.id))
+    return [to_stored_run(row) for row in rows]
 
 
 def parse_rankings_payload(payload: Mapping[str, Any]) -> Rankings:
@@ -255,8 +277,7 @@ class BenchmarkStore:
         engine = create_db_engine(sqlite_url(self._paths.bench_db))
         try:
             with create_session_factory(engine)() as session:
-                rows = session.scalars(select(BenchmarkRun).order_by(BenchmarkRun.id))
-                return [to_stored_run(row) for row in rows]
+                return read_runs(session)
         finally:
             engine.dispose()
 

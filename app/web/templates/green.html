@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Yeşil panel · Yeşil İşe Alım{% endblock %}
+{% block content %}
+<h1>Yeşil panel</h1>
+{% if notice %}<p class="notice" role="status">{{ notice }}</p>{% endif %}
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+<h2>Canlı sayaçlar</h2>
+<table>
+<thead><tr><th scope="col">Sayaç</th><th scope="col">Değer</th></tr></thead>
+<tbody>
+{% for counter in counters %}
+<tr><td>{{ counter.label }}</td><td>{{ counter.value }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+
+<h2>Son ölçüm karşılaştırması</h2>
+{% if comparison %}
+{% for warning in comparison.warnings %}<p class="warning" role="alert">{{ warning }}</p>{% endfor %}
+<table>
+<thead><tr><th scope="col">Ölçüt</th><th scope="col">Baseline</th><th scope="col">Green</th><th scope="col">Fark %</th></tr></thead>
+<tbody>
+{% for line in comparison.lines %}
+<tr><td>{{ line.label }}</td><td>{{ line.baseline }}</td><td>{{ line.green }}</td><td>{{ line.difference }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+<p>K1 durumu: <strong>{{ comparison.k1_overall }}</strong></p>
+<ul>
+{% for key, verdict in comparison.k1_criteria %}<li>{{ key }}: {{ verdict }}</li>{% endfor %}
+</ul>
+<p class="muted">Koşular: baseline {{ comparison.run_ids[0]|join(", ") }}; green {{ comparison.run_ids[1]|join(", ") }}.</p>
+{% else %}
+<p>Henüz ölçüm yok.</p>
+{% endif %}
+
+<h2>Sayfa ağırlığı</h2>
+{% if page_weights %}
+<table>
+<thead><tr><th scope="col">Yol</th><th scope="col">Yanıt sayısı</th><th scope="col">Ortalama</th></tr></thead>
+<tbody>
+{% for line in page_weights %}
+<tr><td>{{ line.path }}</td><td>{{ line.response_count }}</td><td>{{ line.average }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p>Henüz sayfa ölçülmedi.</p>
+{% endif %}
+
+<h2>Retention</h2>
+<form method="post" action="{{ retention_path }}" class="stack">
+<label for="{{ days_field }}">+N gün ileri sar</label>
+<input id="{{ days_field }}" name="{{ days_field }}" type="number" min="0" max="{{ days_max }}" value="0" required>
+<button type="submit">Retention'ı çalıştır</button>
+</form>
+<p class="muted">İşveren girişi gerekir.</p>
+{% endblock %}

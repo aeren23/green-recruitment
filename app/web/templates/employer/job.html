@@ -9,6 +9,10 @@
 {% for label, value in filters %}<li>{{ label }}: {{ value }}</li>
 {% endfor %}</ul>
 {% endif %}
+<h2>Gereksinimler</h2>
+<ul class="muted">
+{% for requirement in posting.requirements|sort(attribute="id") %}<li>{{ requirement.text }} (ağırlık: {{ requirement.weight }})</li>
+{% endfor %}</ul>
 {% if posting.status.value == "open" %}
 <form method="post" action="{{ paths.employer_close_path(posting.id) }}" class="inline-form"><button type="submit">Kapat</button></form>
 {% elif posting.status.value == "closed" %}

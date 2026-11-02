@@ -10,11 +10,17 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
-from app.models import GREEN_COUNTER_ROW_ID, GreenCounter
+from app.models import (
+    GREEN_COUNTER_ROW_ID,
+    Application,
+    ApplicationStatus,
+    DecisionRecord,
+    GreenCounter,
+)
 
 DEFAULT_INCREMENT = 1
 
@@ -147,3 +153,28 @@ def read_counters(session: Session) -> CounterSnapshot:
     if row is None:
         return CounterSnapshot()
     return CounterSnapshot(**dict(zip((m.value for m in CounterName), row, strict=True)))
+
+
+def count_confirmed_applications(session: Session) -> int:
+    """Confirmed applications still known to the demo database.
+
+    A confirmed application is either still stored (not a draft) or was
+    deleted and left a decision record. Applications released without a record
+    (a finished shortlist) are no longer known and are not counted.
+    """
+    stored = session.scalar(
+        select(func.count())
+        .select_from(Application)
+        .where(Application.status != ApplicationStatus.DRAFT)
+    )
+    decided = session.scalar(select(func.count()).select_from(DecisionRecord))
+    return (stored or 0) + (decided or 0)
+
+
+def derive_llm_calls_avoided(session: Session) -> int:
+    """`llm_calls_avoided` of SC-14: confirmed applications minus LLM calls.
+
+    Derived on read, because counters only ever grow. Never negative.
+    """
+    snapshot = read_counters(session)
+    return max(count_confirmed_applications(session) - snapshot.llm_calls, 0)

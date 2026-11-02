@@ -141,3 +141,33 @@ FILTER_MIN_YEARS_VALUE = "{years} yıl"
 MATCH_EVIDENCE = "Kanıt"
 MATCH_CLAIM = "Beyan"
 MATCH_OTHER = "Diğer"
+
+# Green panel (T-16).
+GREEN_COUNTER_LABELS = {
+    "pdf_bytes_not_stored": "Saklanmayan PDF boyutu",
+    "parse_cache_hits": "Ayrıştırma önbelleği isabeti",
+    "embed_cache_hits": "Gömme önbelleği isabeti",
+    "embeddings_computed": "Hesaplanan gömme sayısı",
+    "llm_calls": "LLM çağrısı",
+    "llm_calls_avoided": "Önlenen LLM çağrısı",
+    "records_deleted": "Silinen kayıt",
+}
+RETENTION_DAYS_INVALID = "Kaç gün ileri sarılacağı 0 ile {limit} arasında bir tam sayı olmalıdır."
+RETENTION_RESULT = (
+    "Retention çalıştı (+{days} gün). Silinen: taslak (R1) {drafts}, "
+    "kısa liste (R4) {shortlists}, karar kaydı (R5) {decisions}. Veritabanı sıkıştırıldı."
+)
+K1_VERDICT_LABELS = {True: "Geçti", False: "Kaldı", None: "Hesaplanamadı"}
+K1_NOT_FINAL_WARNING = (
+    "Uyarı: bu koşular nihai ölçüm koşullarında alınmadı; sonuçlar K1 için geçerli değildir."
+)
+GREEN_METRIC_LABELS = {
+    "energy_wh_net_per_application": "Net enerji / başvuru (Wh)",
+    "sci_g_per_application": "SCI / başvuru (g CO2e, M hariç)",
+    "duration_s": "Süre (s)",
+    "llm_calls": "LLM çağrısı",
+    "storage_bytes_after_retention": "Retention sonrası depolama (B)",
+    "precision_at_k": "precision@k",
+    "overlap_at_k": "overlap@k",
+}
+PAGE_WEIGHT_AVERAGE_KB = "{value} KB"
