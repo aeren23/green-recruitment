@@ -13,6 +13,7 @@ from typing import Any
 
 import numpy as np
 import pytest
+from huggingface_hub.errors import LocalEntryNotFoundError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -24,6 +25,7 @@ from app.scoring.embed import (
     PASSAGE_PREFIX,
     QUERY_PREFIX,
     EmbedderNotLoadedError,
+    EmbeddingModelNotCachedError,
     EmptySectionTextError,
     MalformedEmbeddingBlobError,
     SentenceTransformerEmbedder,
@@ -107,14 +109,69 @@ def test_model_version_is_known_before_load() -> None:
     assert SentenceTransformerEmbedder(MODEL_NAME, DEVICE).model_version == MODEL_NAME
 
 
-def test_load_builds_the_model_with_name_and_device_only(
+def test_load_builds_the_model_with_name_device_and_local_only(
     stub_library: type[StubSentenceTransformer],
 ) -> None:
     """The model gets the configured name and device, and no remote code flag."""
     SentenceTransformerEmbedder(MODEL_NAME, DEVICE).load()
     (instance,) = stub_library.instances
     assert instance.init_args == (MODEL_NAME,)
-    assert instance.init_kwargs == {"device": DEVICE}
+    assert instance.init_kwargs == {"device": DEVICE, "local_files_only": True}
+
+
+def test_local_files_only_is_passed_as_false_when_disabled(
+    stub_library: type[StubSentenceTransformer],
+) -> None:
+    """Turning the setting off lets the library reach the network again."""
+    SentenceTransformerEmbedder(MODEL_NAME, DEVICE, local_files_only=False).load()
+    (instance,) = stub_library.instances
+    assert instance.init_kwargs["local_files_only"] is False
+
+
+def test_create_embedder_passes_the_local_only_setting(
+    stub_library: type[StubSentenceTransformer], test_settings: Settings
+) -> None:
+    """`EMBED_LOCAL_FILES_ONLY=false` reaches the model through the factory."""
+    create_embedder(test_settings.model_copy(update={"embed_local_files_only": False})).load()
+    (instance,) = stub_library.instances
+    assert instance.init_kwargs["local_files_only"] is False
+
+
+def test_missing_cached_model_raises_a_typed_error_with_the_download_command(
+    stub_library: type[StubSentenceTransformer], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A model absent from the cache explains how to download it once."""
+
+    def fail_like_the_library(*args: Any, **kwargs: Any) -> None:
+        try:
+            raise LocalEntryNotFoundError("not in cache")
+        except LocalEntryNotFoundError as cause:
+            raise OSError("couldn't connect to huggingface.co") from cause
+
+    monkeypatch.setattr(
+        sys.modules["sentence_transformers"], "SentenceTransformer", fail_like_the_library
+    )
+    with pytest.raises(EmbeddingModelNotCachedError) as error_info:
+        SentenceTransformerEmbedder(MODEL_NAME, DEVICE).load()
+    message = str(error_info.value)
+    assert MODEL_NAME in message
+    assert f"d('{MODEL_NAME}')" in message
+    assert "EMBED_LOCAL_FILES_ONLY=false" in message
+
+
+def test_other_os_errors_while_loading_are_not_hidden(
+    stub_library: type[StubSentenceTransformer], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only a missing cached file is translated; other OS errors pass through."""
+
+    def fail_on_disk(*args: Any, **kwargs: Any) -> None:
+        raise OSError("disk unavailable")
+
+    monkeypatch.setattr(
+        sys.modules["sentence_transformers"], "SentenceTransformer", fail_on_disk
+    )
+    with pytest.raises(OSError, match="disk unavailable"):
+        SentenceTransformerEmbedder(MODEL_NAME, DEVICE).load()
 
 
 def test_second_load_does_not_rebuild_the_model(

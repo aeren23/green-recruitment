@@ -85,6 +85,9 @@ class Settings(BaseSettings):
     employer_token: str = Field(min_length=1)
     embed_model: str = "intfloat/multilingual-e5-small"
     embed_device: Literal["cuda", "cpu"] = "cuda"
+    # When true the embedding model is read from the local Hugging Face cache only,
+    # so start-up never depends on the network.
+    embed_local_files_only: bool = True
     ollama_url: str = "http://localhost:11434"
     llm_model: str = "qwen2.5:3b"
     top_k: int = 5

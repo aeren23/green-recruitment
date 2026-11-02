@@ -36,12 +36,25 @@ EMBEDDING_DTYPE = np.dtype(np.float32)
 FLOAT_BYTES = EMBEDDING_DTYPE.itemsize
 VECTOR_DIMENSIONS = 1
 MATRIX_DIMENSIONS = 2
+DOWNLOAD_COMMAND_TEMPLATE = (
+    ".venv/Scripts/python -c \"from huggingface_hub import snapshot_download as d; "
+    "d('{model_name}')\""
+)
+MODEL_NOT_CACHED_MESSAGE = (
+    "Embedding model {model_name!r} is not in the local Hugging Face cache. "
+    "Download it once with:\n    {command}\n"
+    "or set EMBED_LOCAL_FILES_ONLY=false to let the app download it at start-up."
+)
 
 FloatMatrix = NDArray[np.float32]
 
 
 class EmbedderNotLoadedError(RuntimeError):
     """Raised when an embedding is requested before `load()` ran."""
+
+
+class EmbeddingModelNotCachedError(RuntimeError):
+    """Raised when local-only loading is on and the model is not in the cache."""
 
 
 class MalformedEmbeddingBlobError(ValueError):
@@ -79,11 +92,14 @@ class SentenceTransformerEmbedder:
     Args:
         model_name: Hugging Face model id, also reported as `model_version`.
         device: Torch device the model runs on (`cuda` or `cpu`).
+        local_files_only: Read the model from the local Hugging Face cache only,
+            without any network request.
     """
 
-    def __init__(self, model_name: str, device: str) -> None:
+    def __init__(self, model_name: str, device: str, local_files_only: bool = True) -> None:
         self._model_name = model_name
         self._device = device
+        self._local_files_only = local_files_only
         self._model: Any = None
 
     @property
@@ -99,15 +115,32 @@ class SentenceTransformerEmbedder:
         """
         if self._model is not None:
             return
+        from huggingface_hub.errors import LocalEntryNotFoundError
         from sentence_transformers import SentenceTransformer
 
         started = time.perf_counter()
-        self._model = SentenceTransformer(self._model_name, device=self._device)
+        try:
+            self._model = SentenceTransformer(
+                self._model_name,
+                device=self._device,
+                local_files_only=self._local_files_only,
+            )
+        except OSError as error:
+            if not isinstance(error.__cause__, LocalEntryNotFoundError):
+                raise
+            raise EmbeddingModelNotCachedError(self._not_cached_message()) from error
         logger.info(
             "Embedding model loaded: model=%s device=%s seconds=%.2f",
             self._model_name,
             self._device,
             time.perf_counter() - started,
+        )
+
+    def _not_cached_message(self) -> str:
+        """Tell the user how to download the model once, or how to allow downloads."""
+        command = DOWNLOAD_COMMAND_TEMPLATE.format(model_name=self._model_name)
+        return MODEL_NOT_CACHED_MESSAGE.format(
+            model_name=self._model_name, command=command
         )
 
     def embed_queries(self, texts: Sequence[str]) -> FloatMatrix:
@@ -146,8 +179,15 @@ class SentenceTransformerEmbedder:
 
 
 def create_embedder(settings: Settings) -> SentenceTransformerEmbedder:
-    """Build an unloaded embedder from the settings (`EMBED_MODEL`, `EMBED_DEVICE`)."""
-    return SentenceTransformerEmbedder(settings.embed_model, settings.embed_device)
+    """Build an unloaded embedder from the settings.
+
+    Reads `EMBED_MODEL`, `EMBED_DEVICE` and `EMBED_LOCAL_FILES_ONLY`.
+    """
+    return SentenceTransformerEmbedder(
+        settings.embed_model,
+        settings.embed_device,
+        settings.embed_local_files_only,
+    )
 
 
 def embedding_to_blob(vector: NDArray[Any]) -> bytes:
