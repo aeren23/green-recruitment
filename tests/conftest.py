@@ -6,11 +6,14 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.db import create_db_engine, create_demo_schema, create_session_factory
+from app.main import create_app
 from app.scoring.embed import PASSAGE_PREFIX, QUERY_PREFIX, FloatMatrix
 
 DUMMY_HASH_SECRET = "test-hash-secret"
@@ -108,3 +111,16 @@ def demo_session(engine: Engine) -> Iterator[Session]:
     create_demo_schema(engine)
     with create_session_factory(engine)() as test_session:
         yield test_session
+
+
+@pytest.fixture
+def web_app(test_settings: Settings, fake_embedder: FakeEmbedder) -> FastAPI:
+    """The application wired with the fake embedder and the temp-path database."""
+    return create_app(test_settings, fake_embedder)
+
+
+@pytest.fixture
+def web_client(web_app: FastAPI) -> Iterator[TestClient]:
+    """A client that runs the lifespan and does not follow redirects."""
+    with TestClient(web_app, follow_redirects=False) as client:
+        yield client

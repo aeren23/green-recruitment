@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{% block title %}Yeşil İşe Alım{% endblock %}</title>
+<link rel="stylesheet" href="{{ paths.STYLESHEET_URL }}">
+</head>
+<body>
+<header class="site-header">
+<span class="brand">Yeşil İşe Alım</span>
+{% block nav %}{% endblock %}
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

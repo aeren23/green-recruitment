@@ -7,9 +7,12 @@ nothing and computes no embedding.
 Filter values:
     The benchmark runs with the language and location filters off (SPEC 7.2),
     which is the default here: `required_languages=[]`, `location=None`,
-    `remote_ok=True`. The demo application uses real filter values; they are
-    added in T-12 through `SeedOptions.filters_by_title` without touching this
-    module's data or logic.
+    `remote_ok=True`. The demo application uses real filter values
+    (`DEMO_FILTERS_BY_TITLE`), supplied through `SeedOptions.filters_by_title`
+    by `python -m app.seed` (`app/seed_demo.py`).
+
+Creation itself (embedding in one batch, normalization of the filter values)
+is `app.postings.create_postings`, shared with the employer web form.
 """
 
 import logging
@@ -20,12 +23,9 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import JobPosting, JobStatus, Requirement
-from app.scoring.embed import (
-    EmbeddingProvider,
-    UnexpectedEmbeddingShapeError,
-    embedding_to_blob,
-)
+from app.models import JobPosting
+from app.postings import PostingInput, RequirementInput, create_postings
+from app.scoring.embed import EmbeddingProvider
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +75,27 @@ class PostingFilters:
 
 
 BENCHMARK_FILTERS = PostingFilters()
+
+LANGUAGE_ENGLISH = "english"
+LANGUAGE_TURKISH = "turkish"
+LOCATION_DENIZLI = "denizli"
+LOCATION_IZMIR = "izmir"
+
+# The demo's real hard-filter values (T-12). The Backend Developer may work
+# remotely, so its location is informational; the other two are on-site.
+DEMO_FILTERS_BY_TITLE: Mapping[str, PostingFilters] = {
+    BACKEND_DEVELOPER_TITLE: PostingFilters(
+        required_languages=(LANGUAGE_ENGLISH,), location=LOCATION_DENIZLI, remote_ok=True
+    ),
+    ACCOUNTANT_TITLE: PostingFilters(
+        required_languages=(LANGUAGE_TURKISH,), location=LOCATION_DENIZLI, remote_ok=False
+    ),
+    HR_SPECIALIST_TITLE: PostingFilters(
+        required_languages=(LANGUAGE_TURKISH, LANGUAGE_ENGLISH),
+        location=LOCATION_IZMIR,
+        remote_ok=False,
+    ),
+}
 
 BACKEND_DEVELOPER_POSTING = PostingSeed(
     title=BACKEND_DEVELOPER_TITLE,
@@ -129,14 +150,6 @@ SEED_POSTINGS = (
 
 
 @dataclass(frozen=True)
-class EmbeddedSeed:
-    """A seed together with the float32 blobs of its requirement embeddings."""
-
-    seed: PostingSeed
-    embeddings: tuple[bytes, ...]
-
-
-@dataclass(frozen=True)
 class SeedOptions:
     """How `seed_postings` fills in what the posting data does not define.
 
@@ -181,13 +194,8 @@ def seed_postings(
     """
     existing = _postings_by_title(session)
     missing = [seed for seed in SEED_POSTINGS if seed.title not in existing]
-    embedded_seeds = _attach_embeddings(embedder, missing)
-    created = [
-        _build_posting(embedded, options, embedder.model_version)
-        for embedded in embedded_seeds
-    ]
-    session.add_all(created)
-    session.flush()
+    inputs = [_posting_input(seed, options) for seed in missing]
+    created = create_postings(session, embedder, inputs)
     for seed, posting in zip(missing, created, strict=True):
         existing[seed.title] = posting
     logger.info(
@@ -198,59 +206,37 @@ def seed_postings(
     return [existing[seed.title] for seed in SEED_POSTINGS]
 
 
+def missing_seed_titles(session: Session) -> list[str]:
+    """Titles of the seed postings the database does not hold yet."""
+    existing = _postings_by_title(session)
+    return [seed.title for seed in SEED_POSTINGS if seed.title not in existing]
+
+
 def _postings_by_title(session: Session) -> dict[str, JobPosting]:
     """All stored postings keyed by title."""
     return {posting.title: posting for posting in session.scalars(select(JobPosting))}
 
 
-def _attach_embeddings(
-    embedder: EmbeddingProvider, seeds: list[PostingSeed]
-) -> list[EmbeddedSeed]:
-    """Embed every requirement of every seed in one query batch (none: no call)."""
-    if not seeds:
-        return []
-    texts = [requirement.text for seed in seeds for requirement in seed.requirements]
-    matrix = embedder.embed_queries(texts)
-    if len(matrix) != len(texts):
-        raise UnexpectedEmbeddingShapeError(
-            f"Embedder returned {len(matrix)} vectors for {len(texts)} requirement texts."
-        )
-    blobs = iter(embedding_to_blob(row) for row in matrix)
-    return [
-        EmbeddedSeed(seed, tuple(next(blobs) for _ in seed.requirements))
-        for seed in seeds
-    ]
-
-
-def _build_posting(
-    embedded: EmbeddedSeed, options: SeedOptions, model_version: str
-) -> JobPosting:
-    """One open posting with its embedded requirements."""
-    seed = embedded.seed
+def _posting_input(seed: PostingSeed, options: SeedOptions) -> PostingInput:
+    """The creation input of one seed, with the filter values of its title."""
     filters = options.filters_for(seed.title)
-    posting = JobPosting(
+    return PostingInput(
         title=seed.title,
         description=seed.description,
-        status=JobStatus.OPEN,
-        closes_at=None,
-        closed_at=None,
-        finalized_at=None,
+        requirements=[
+            RequirementInput(requirement.text, requirement.weight)
+            for requirement in seed.requirements
+        ],
         created_at=options.now,
-        required_languages=list(filters.required_languages),
+        required_languages=filters.required_languages,
         location=filters.location,
         remote_ok=filters.remote_ok,
         min_years=seed.min_years,
-        relevant_categories=list(seed.relevant_categories),
+        relevant_categories=seed.relevant_categories,
     )
-    posting.requirements = [
-        Requirement(
-            text=requirement.text,
-            weight=requirement.weight,
-            embedding=embedding,
-            model_version=model_version,
-        )
-        for requirement, embedding in zip(
-            seed.requirements, embedded.embeddings, strict=True
-        )
-    ]
-    return posting
+
+
+if __name__ == "__main__":
+    from app.seed_demo import main
+
+    main()

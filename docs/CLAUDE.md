@@ -54,14 +54,15 @@ app/
   config.py          pydantic-settings, .env
   db.py              SQLAlchemy engine, SQLite pragmas
   models.py          ORM entities (SPEC §5)
-  seed.py            demo job postings
+  postings.py        create_posting(s): one embedding batch, filter normalization (seed and web form)
+  seed.py            demo job postings; seed_demo.py is the `python -m app.seed` command
   pipeline/          the SPEC §6.1 flow, shared by the web layer and bench
   ingest/            pdf.py, normalize.py, sections.py, contact.py
   scoring/           embed.py, filters.py, matrix.py
   llm/               ollama.py, prompts.py
   privacy/           retention.py, reasons.py
   green/             tracker.py, counters.py, pageweight.py
-  web/               routes_candidate.py, routes_employer.py, routes_green.py, templates/, static/
+  web/               routes_candidate.py, routes_employer.py, routes_green.py, auth.py, pagination.py, templates/, static/
 bench/
   __main__.py        CLI
   dataset.py         Kaggle Resume Dataset reader and sampling

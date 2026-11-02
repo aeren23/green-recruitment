@@ -1,0 +1,49 @@
+{% extends "employer/base.html" %}
+{% block title %}Yeni ilan · Yeşil İşe Alım{% endblock %}
+{% block content %}
+<h1>Yeni ilan</h1>
+{% if errors %}
+<div class="error" role="alert">
+<p>İlan kaydedilemedi:</p>
+<ul>
+{% for message in errors %}<li>{{ message }}</li>
+{% endfor %}</ul>
+</div>
+{% endif %}
+<form method="post" action="{{ paths.EMPLOYER_NEW_JOB_PATH }}" class="stack">
+<label for="title">Başlık</label>
+<input id="title" name="title" value="{{ form.title }}" required>
+
+<label for="description">Açıklama</label>
+<textarea id="description" name="description" rows="4">{{ form.description }}</textarea>
+
+<fieldset>
+<legend>Zorunlu filtreler</legend>
+<p class="muted">Bilinmeyen bir bilgi adayı elemez. Yalnızca adayın bildirdiği ve ilanla çelişen değerler eler.</p>
+<label for="languages">Diller (virgülle ayırın; adayın bunlardan birini bilmesi yeterli)</label>
+<input id="languages" name="languages" value="{{ form.languages }}" placeholder="Türkçe, İngilizce">
+<label for="location">Konum</label>
+<input id="location" name="location" value="{{ form.location }}">
+<label class="check"><input type="checkbox" name="remote_ok" value="1"{% if form.remote_ok %} checked{% endif %}> Uzaktan çalışmaya uygun (konum filtresi uygulanmaz)</label>
+<label for="min_years">Asgari deneyim (yıl)</label>
+<input id="min_years" name="min_years" value="{{ form.min_years }}" inputmode="decimal">
+</fieldset>
+
+<fieldset>
+<legend>Gereksinimler</legend>
+<p class="muted">Özgeçmişler İngilizce olduğu için gereksinimleri İngilizce yazın. Boş satırlar yok sayılır; en az bir gereksinim gerekir.</p>
+{% for row in form.rows %}
+<div class="requirement-row">
+<label class="visually-hidden" for="requirement-text-{{ loop.index }}">Gereksinim {{ loop.index }}</label>
+<input id="requirement-text-{{ loop.index }}" name="requirement_text" value="{{ row.text }}" placeholder="Gereksinim {{ loop.index }}">
+<label class="visually-hidden" for="requirement-weight-{{ loop.index }}">Gereksinim {{ loop.index }} ağırlığı</label>
+<select id="requirement-weight-{{ loop.index }}" name="requirement_weight">
+{% for value, label in weight_options %}<option value="{{ value }}"{% if row.weight == value|string %} selected{% endif %}>{{ label }}</option>
+{% endfor %}</select>
+</div>
+{% endfor %}
+</fieldset>
+
+<button type="submit">İlanı kaydet</button>
+</form>
+{% endblock %}

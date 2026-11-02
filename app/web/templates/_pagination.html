@@ -1,0 +1,9 @@
+{% macro pager(page, list_path) %}
+{% if page.page_count > 1 %}
+<nav class="pager" aria-label="Sayfalama">
+{% if page.has_previous %}<a href="{{ list_path }}?page={{ page.previous_number }}" rel="prev">Önceki</a>{% endif %}
+<span>Sayfa {{ page.number }} / {{ page.page_count }}</span>
+{% if page.has_next %}<a href="{{ list_path }}?page={{ page.next_number }}" rel="next">Sonraki</a>{% endif %}
+</nav>
+{% endif %}
+{% endmacro %}

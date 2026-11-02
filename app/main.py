@@ -7,7 +7,9 @@ from fastapi import APIRouter, FastAPI
 
 from app.config import Settings
 from app.db import create_db_engine, create_demo_schema, create_session_factory
+from app.green.tracker import NoOpStageTracker
 from app.scoring.embed import EmbeddingProvider, create_embedder
+from app.web.setup import install_web
 
 HEALTH_PATH = "/health"
 HEALTH_RESPONSE = {"status": "ok"}
@@ -61,6 +63,8 @@ def create_app(
         application.state.embedder = resolve_embedder(resolved_settings, embedder)
         engine = create_db_engine(resolved_settings.database_url)
         application.state.settings = resolved_settings
+        # Decision D3: the web layer never measures, whatever GREEN_TRACKING says.
+        application.state.tracker = NoOpStageTracker()
         application.state.engine = engine
         application.state.session_factory = create_session_factory(engine)
         try:
@@ -71,6 +75,7 @@ def create_app(
 
     application = FastAPI(lifespan=lifespan)
     application.include_router(health_router)
+    install_web(application)
     return application
 
 

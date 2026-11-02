@@ -9,7 +9,10 @@ from sqlalchemy.orm import Session
 
 from app.models import JobPosting, JobStatus, Requirement
 from app.scoring.embed import UnexpectedEmbeddingShapeError, blob_to_embedding
+import app.seed_demo as seed_demo_module
+from app.config import Settings
 from app.seed import (
+    DEMO_FILTERS_BY_TITLE,
     ACCOUNTANT_TITLE,
     BACKEND_DEVELOPER_TITLE,
     BENCHMARK_FILTERS,
@@ -132,3 +135,79 @@ def test_wrong_number_of_vectors_fails_before_anything_is_stored(
     with pytest.raises(UnexpectedEmbeddingShapeError):
         seed_postings(demo_session, fake_embedder, SeedOptions(now=NOW))
     assert count_rows(demo_session, JobPosting) == 0
+
+
+# --- demo seed (python -m app.seed) -------------------------------------------
+
+EXPECTED_DEMO_FILTERS = {
+    BACKEND_DEVELOPER_TITLE: (["english"], "denizli", True, 2),
+    ACCOUNTANT_TITLE: (["turkish"], "denizli", False, 3),
+    HR_SPECIALIST_TITLE: (["turkish", "english"], "izmir", False, 2),
+}
+
+
+class LoadCountingEmbedder(FakeEmbedder):
+    """A fake that counts `load()` calls, standing in for the real model."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.load_calls = 0
+
+    def load(self) -> None:
+        """Count the call."""
+        self.load_calls += 1
+
+
+@pytest.fixture
+def counting_embedder(monkeypatch: pytest.MonkeyPatch) -> LoadCountingEmbedder:
+    """`create_embedder` of the demo seed returns one counting fake."""
+    embedder = LoadCountingEmbedder()
+    monkeypatch.setattr(seed_demo_module, "create_embedder", lambda settings: embedder)
+    return embedder
+
+
+def test_demo_seed_stores_the_demo_filter_values(
+    demo_session: Session, test_settings: Settings, counting_embedder: LoadCountingEmbedder
+) -> None:
+    """Languages, location, remote_ok and min_years per posting, normalized."""
+    created = seed_demo_module.seed_demo_postings(demo_session, test_settings, NOW)
+
+    assert created == len(SEED_POSTINGS)
+    stored = {
+        posting.title: (
+            posting.required_languages, posting.location, posting.remote_ok, posting.min_years
+        )
+        for posting in demo_session.scalars(select(JobPosting))
+    }
+    assert stored == EXPECTED_DEMO_FILTERS
+    assert set(DEMO_FILTERS_BY_TITLE) == set(EXPECTED_DEMO_FILTERS)
+    assert all(posting.status is JobStatus.OPEN for posting in demo_session.scalars(select(JobPosting)))
+
+
+def test_demo_seed_is_idempotent_and_loads_the_model_only_when_needed(
+    demo_session: Session, test_settings: Settings, counting_embedder: LoadCountingEmbedder
+) -> None:
+    """Second run: nothing created, no model load, no embedding."""
+    seed_demo_module.seed_demo_postings(demo_session, test_settings, NOW)
+    assert counting_embedder.load_calls == 1
+    assert len(counting_embedder.query_calls) == 1
+
+    again = seed_demo_module.seed_demo_postings(demo_session, test_settings, NOW)
+
+    assert again == 0
+    assert counting_embedder.load_calls == 1
+    assert len(counting_embedder.query_calls) == 1
+    assert count_rows(demo_session, JobPosting) == len(SEED_POSTINGS)
+    assert count_rows(demo_session, Requirement) == len(SEED_POSTINGS) * REQUIREMENTS_PER_POSTING
+
+
+def test_benchmark_mode_is_unchanged_by_the_demo_filters(
+    demo_session: Session, fake_embedder: FakeEmbedder
+) -> None:
+    """`SeedOptions(now=...)` alone still seeds with both filters off."""
+    postings = seed_postings(demo_session, fake_embedder, SeedOptions(now=NOW))
+    for posting in postings:
+        assert posting.required_languages == []
+        assert posting.location is None
+        assert posting.remote_ok is True
+        assert posting.min_years == EXPECTED_MIN_YEARS[posting.title]

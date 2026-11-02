@@ -72,7 +72,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
 
 ## Phase 4: Demo application
 
-- [ ] **T-12 Seed and employer posting pages**
+- [x] **T-12 Seed and employer posting pages**
   - `app/seed.py` (the 3 postings in SPEC §7.2), template skeleton (`base.html`, `app.css`), `/employer` and `/employer/jobs/new`. Cookie check with `EMPLOYER_TOKEN`.
   - Acceptance: When a posting is created, requirement embeddings are computed once. Page weight is within budget.
 
