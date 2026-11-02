@@ -68,7 +68,7 @@ bench/
   scenario.py        application scenario generation
   runner.py          BenchmarkRunner base class
   green.py           green pipeline runner (uses app/ modules)
-  (helpers)          run_command, results, store, notes, run_summary, gpu_sampler, cuda_context, environment, llm_timing, idle
+  (helpers)          run_command, results, store, notes, pipeline_notes, run_summary, gpu_sampler, cuda_context, environment, llm_timing, idle, baseline_files, estimate
   baseline.py        baseline runner
   quality.py         precision@k, overlap@k
   report.py          JSON + Markdown output

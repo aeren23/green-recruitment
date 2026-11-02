@@ -37,6 +37,14 @@ def format_gpu_line(outcome: RunOutcome) -> str:
     )
 
 
+def format_total_duration(outcome: RunOutcome) -> str:
+    """The run's total duration: summed stage seconds and the measured wall time."""
+    return (
+        f"Total duration: {outcome.timing.staged_duration_s:.2f} s in stages, "
+        f"{outcome.timing.measured_wall_s:.2f} s wall (model_load excluded)"
+    )
+
+
 def format_run_summary(outcome: RunOutcome) -> str:
     """Render the run's totals, counts, storage and GPU cross-check."""
     record, result = outcome.record, outcome.record.result

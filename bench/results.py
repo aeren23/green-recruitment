@@ -41,10 +41,14 @@ class RunPlan:
 
 @dataclass(frozen=True)
 class RankedEntry:
-    """One ranked application: a dataset record id and its raw score."""
+    """One ranked application: a dataset record id and its raw score.
+
+    The score is `None` only for a baseline application whose LLM answer stayed
+    malformed; such entries are ranked last.
+    """
 
     record_id: str
-    score: float
+    score: float | None
 
 
 Rankings = dict[str, list[RankedEntry]]

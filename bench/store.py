@@ -17,6 +17,7 @@ from bench.results import RunRecord
 DEFAULT_BENCH_DIRECTORY = Path("data/bench")
 BENCH_DB_NAME = "bench.db"
 GREEN_DB_NAME = "bench_green.db"
+BASELINE_STORE_NAME = "baseline_store"
 IDLE_POWER_NAME = "idle_power.json"
 RANKINGS_DIRECTORY_NAME = "rankings"
 RANKINGS_SUFFIX = ".json"
@@ -44,6 +45,11 @@ class BenchPaths:
     def green_db(self) -> Path:
         """The green runner's scratch database, recreated for every run."""
         return self.directory / GREEN_DB_NAME
+
+    @property
+    def baseline_store(self) -> Path:
+        """Folder of the baseline's conventional store (SPEC 7.6), one folder per run."""
+        return self.directory / BASELINE_STORE_NAME
 
     @property
     def idle_power(self) -> Path:

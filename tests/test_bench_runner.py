@@ -433,13 +433,6 @@ def test_percentile_is_nearest_rank(values: list[float], fraction: float, expect
     assert percentile(values, fraction) == expected
 
 
-def test_baseline_exits_non_zero_until_t10(capsys: pytest.CaptureFixture[str]) -> None:
-    from bench.__main__ import main
-
-    assert main(["run", "--pipeline", "baseline", "--n", "4"]) != 0
-    assert "T-10" in capsys.readouterr().err
-
-
 def test_run_options_are_parsed() -> None:
     from bench.__main__ import build_parser
 

@@ -43,6 +43,7 @@ from app.privacy.retention import RetentionContext, close_posting
 from app.scoring.embed import EmbeddingProvider
 from app.seed import SeedOptions, seed_postings
 from bench.llm_timing import TimedLlm, WarmLlmClient
+from bench.pipeline_notes import PipelineNoteFacts, build_pipeline_notes
 from bench.results import (
     LLM_STATUS_AVAILABLE,
     LLM_STATUS_UNAVAILABLE,
@@ -61,9 +62,6 @@ logger = logging.getLogger(__name__)
 
 DATABASE_FILE_SUFFIXES: tuple[str, ...] = ("", "-journal", "-wal", "-shm")
 VACUUM_STATEMENT = "VACUUM"
-NO_ELIMINATIONS = "none"
-REASON_SEPARATOR = ","
-REASON_COUNT_FORMAT = "{reason}:{count}"
 
 
 @dataclass(frozen=True)
@@ -94,16 +92,6 @@ def database_size_bytes(database_path: Path) -> int:
     """Total size of the database file and any journal or WAL sibling."""
     return sum(
         file.stat().st_size for file in database_files(database_path) if file.exists()
-    )
-
-
-def format_eliminations(counts: WorkloadCounts) -> str:
-    """`MIN_YEARS:3,...` for the notes, or `none`."""
-    if not counts.eliminated_by_reason:
-        return NO_ELIMINATIONS
-    return REASON_SEPARATOR.join(
-        REASON_COUNT_FORMAT.format(reason=reason, count=count)
-        for reason, count in sorted(counts.eliminated_by_reason.items())
     )
 
 
@@ -360,14 +348,10 @@ class GreenRunner(BenchmarkRunner):
         self, counts: WorkloadCounts, counters: CounterSnapshot
     ) -> dict[str, str]:
         """Aggregate counts for `measurement_notes`."""
-        return {
-            "applications": str(counts.submitted),
-            "ranked": str(counts.ranked),
-            "duplicates_blocked": str(counts.blocked),
-            "unreadable": str(counts.unreadable),
-            "eliminated_by_reason": format_eliminations(counts),
-            "embeddings_computed": str(counters.embeddings_computed),
-            "records_deleted": str(counters.records_deleted),
-            "llm_failures": str(self._llm_usage.failures),
-        }
+        facts = PipelineNoteFacts(
+            embeddings_computed=counters.embeddings_computed,
+            records_deleted=counters.records_deleted,
+            llm_failures=self._llm_usage.failures,
+        )
+        return build_pipeline_notes(counts, facts)
 

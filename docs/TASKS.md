@@ -61,7 +61,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - `bench/scenario.py` (SPEC §7.3) and `bench/green.py`: uses the `app/` modules directly and writes to a separate DB (`data/bench/bench_green.db`). At the end all postings are closed, retention and `VACUUM` run, and storage is measured at two points. A minimal version of retention is written for this task and completed in T-14.
   - Acceptance: `bench run --pipeline green --n 50` runs, and `BenchmarkRun` and `StageMeasurement` records are written.
 
-- [ ] **T-10 Baseline runner**
+- [x] **T-10 Baseline runner**
   - `bench/baseline.py`: SPEC §7.4. Same scenario and same seed.
   - Acceptance: `bench run --pipeline baseline --n 50` runs. Total duration is printed to the console, and an estimated duration for N=300 is shown.
 
