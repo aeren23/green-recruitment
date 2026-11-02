@@ -1,0 +1,41 @@
+{% extends "employer/base.html" %}
+{% from "_pagination.html" import pager %}
+{% block title %}{{ posting.title }} · Yeşil İşe Alım{% endblock %}
+{% block content %}
+<h1>{{ posting.title }}</h1>
+<p class="muted">Durum: {{ status_labels[posting.status] }}</p>
+{% if filters %}
+<ul class="muted">
+{% for label, value in filters %}<li>{{ label }}: {{ value }}</li>
+{% endfor %}</ul>
+{% endif %}
+{% if posting.status.value == "open" %}
+<form method="post" action="{{ paths.employer_close_path(posting.id) }}" class="inline-form"><button type="submit">Kapat</button></form>
+{% elif posting.status.value == "closed" %}
+<form method="post" action="{{ paths.employer_finalize_path(posting.id) }}" class="inline-form"><button type="submit">Sonuçlandır</button></form>
+{% endif %}
+<h2>Sıralı adaylar</h2>
+{% if rows %}
+<p class="muted">Göreli puan, bu ilandaki tüm sıralı adaylar arasında 0 ile 100'e ölçeklenmiştir; mutlak bir başarı ölçüsü değildir. Sıralama ham puana göre yapılır.</p>
+<table>
+<thead>
+<tr><th scope="col">Aday</th><th scope="col">Göreli puan (0-100)</th><th scope="col">Durum</th><th scope="col">Ayrıntı</th></tr>
+</thead>
+<tbody>
+{% for row in rows %}
+<tr>
+<td>{{ row.label }}{% if row.missing_information %} <span class="muted">(eksik bilgi)</span>{% endif %}</td>
+<td>{{ row.relative_score }}</td>
+<td>{% if row.shortlisted %}<strong>Kısa listede</strong>{% else %}Sıralandı{% endif %}</td>
+<td><a href="{{ paths.employer_application_path(row.application_id) }}">İncele</a></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+<p class="muted">Toplam {{ page.total }} aday.</p>
+{{ pager(page, list_path) }}
+{% else %}
+<p>Henüz sıralanmış aday yok.</p>
+{% endif %}
+<p><a href="{{ paths.EMPLOYER_HOME_PATH }}">İlanlara dön</a></p>
+{% endblock %}

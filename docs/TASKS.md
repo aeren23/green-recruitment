@@ -84,7 +84,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - `privacy/retention.py`: R1–R5 from SPEC §8.3, refcount, the `now` parameter. The posting-close endpoint.
   - Acceptance: A test for each rule. It is tested that when a profile has applications to two postings and is eliminated from one, the profile is not deleted. Within the DecisionRecord period, a repeat application to the same posting is blocked.
 
-- [ ] **T-15 Ranked list, matrix, shortlist**
+- [x] **T-15 Ranked list, matrix, shortlist**
   - `/employer/jobs/{id}` (paginated, anonymous, relative score, "missing information" marker) and `/employer/applications/{id}` (matrix table, evidence/claim marker, summary). Shortlisting and revealing contact information. When the top-k changes, summaries are generated only for the new top-k candidates.
   - Acceptance: Contact information appears in no employer response outside the shortlist (tested on the response HTML).
 

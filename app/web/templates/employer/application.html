@@ -1,0 +1,46 @@
+{% extends "employer/base.html" %}
+{% block title %}{{ detail.label }} · Yeşil İşe Alım{% endblock %}
+{% block content %}
+<h1>{{ detail.label }}</h1>
+<p class="muted">Göreli puan: {{ detail.relative_score }} / 100 (bu ilandaki sıralı adaylara göre)</p>
+{% if detail.contact %}
+<section>
+<h2>Kısa listede · İletişim bilgileri</h2>
+<ul>
+<li>Ad: {{ detail.contact.name or "—" }}</li>
+<li>E-posta: {{ detail.contact.email or "—" }}</li>
+<li>Telefon: {{ detail.contact.phone or "—" }}</li>
+</ul>
+</section>
+{% elif detail.can_shortlist %}
+<form method="post" action="{{ paths.employer_shortlist_path(detail.application_id) }}">
+<button type="submit">Kısa listeye al</button>
+</form>
+{% endif %}
+<h2>Özet</h2>
+{% if detail.summary %}<p>{{ detail.summary }}</p>{% else %}<p class="muted">Özet henüz yok.</p>{% endif %}
+<h2>Gereksinim eşleşmeleri</h2>
+<table>
+<thead>
+<tr><th scope="col">Gereksinim</th><th scope="col">Ağırlık</th><th scope="col">En iyi bölüm</th><th scope="col">Kanıt / beyan</th><th scope="col">Benzerlik</th><th scope="col">Ayarlı</th><th scope="col">Eşleşen metin</th></tr>
+</thead>
+<tbody>
+{% for row in detail.matrix %}
+<tr>
+<td>{{ row.requirement_text }}</td>
+<td>{{ row.weight }}</td>
+{% if row.section_type_label %}
+<td>{{ row.section_type_label }}</td>
+<td>{{ row.marker }}</td>
+<td>{{ row.similarity }}</td>
+<td>{{ row.adjusted }}</td>
+<td>{{ row.section_text or "—" }}</td>
+{% else %}
+<td colspan="5" class="muted">Eşleşen bölüm yok.</td>
+{% endif %}
+</tr>
+{% endfor %}
+</tbody>
+</table>
+<p><a href="{{ paths.employer_job_path(detail.job_id) }}">İlana dön</a></p>
+{% endblock %}

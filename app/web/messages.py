@@ -120,3 +120,24 @@ POSTING_NOTICES = {
     NOTICE_FINALIZED: "İlan sonuçlandırıldı. Kısa listedeki başvurular silindi.",
 }
 FINALIZE_REQUIRES_CLOSED = "İlan sonuçlandırılamadı: önce ilanı kapatmalısınız."
+
+# Ranked list, matrix and shortlisting (T-15).
+APPLICATION_NOT_FOUND = "Aradığınız başvuru bulunamadı."
+POSTING_NOT_FOUND = "Aradığınız ilan bulunamadı."
+SHORTLIST_REQUIRES_RANKED = (
+    "Bu başvuru kısa listeye alınamaz: yalnızca sıralanmış başvurular alınabilir."
+)
+SHORTLIST_REQUIRES_OPEN_POSTING = "Bu başvuru kısa listeye alınamadı: ilan artık açık değil."
+SHORTLIST_FAILED_HEADING = "Kısa listeye alınamadı"
+BACK_TO_EMPLOYER_POSTINGS = "İlanlara dön"
+CANDIDATE_LABEL = "Aday #{application_id}"
+FILTER_LANGUAGES = "Diller"
+FILTER_LOCATION = "Konum"
+FILTER_REMOTE = "Uzaktan çalışma"
+FILTER_MIN_YEARS = "Asgari deneyim"
+FILTER_REMOTE_YES = "Uygun"
+FILTER_REMOTE_NO = "Uygun değil"
+FILTER_MIN_YEARS_VALUE = "{years} yıl"
+MATCH_EVIDENCE = "Kanıt"
+MATCH_CLAIM = "Beyan"
+MATCH_OTHER = "Diğer"

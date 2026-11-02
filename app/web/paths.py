@@ -10,7 +10,7 @@ STYLESHEET_URL = "/static/app.css"
 
 
 def employer_job_path(job_id: int) -> str:
-    """Path of the employer's posting detail page (built in T-15)."""
+    """Path of the employer's posting detail page."""
     return EMPLOYER_JOB_PATH_TEMPLATE.format(job_id=job_id)
 
 HOME_PATH = "/"
@@ -70,3 +70,17 @@ def employer_finalize_path(job_id: int) -> str:
 def employer_home_with_notice(notice: str) -> str:
     """The postings list with a notice flag the page translates into text."""
     return f"{EMPLOYER_HOME_PATH}?{NOTICE_QUERY_PARAMETER}={notice}"
+
+
+EMPLOYER_APPLICATION_PATH_TEMPLATE = "/employer/applications/{application_id}"
+EMPLOYER_SHORTLIST_PATH_TEMPLATE = "/employer/applications/{application_id}/shortlist"
+
+
+def employer_application_path(application_id: int) -> str:
+    """Path of the application detail page of the employer."""
+    return EMPLOYER_APPLICATION_PATH_TEMPLATE.format(application_id=application_id)
+
+
+def employer_shortlist_path(application_id: int) -> str:
+    """Path that shortlists a ranked application."""
+    return EMPLOYER_SHORTLIST_PATH_TEMPLATE.format(application_id=application_id)
