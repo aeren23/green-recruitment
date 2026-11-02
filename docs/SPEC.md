@@ -277,7 +277,7 @@ Model loading (`model_load`) is measured as a separate stage and is not included
 
 - `precision@k` (k=`QUALITY_K`=10): for each posting, the share of the final ranking's top k candidates whose category is in `relevant_categories`. Averaged over postings.
 - For quality metrics, repeat applications are deduplicated by CV id. If a posting has fewer than k candidates, the denominator is the candidate count.
-- `overlap@k`: the intersection of the green pipeline's top-k list and the baseline's top-k list, divided by k. Because the baseline is scored by a small 3B model, this metric is auxiliary; the main quality metric is precision@k.
+- `overlap@k`: the intersection of the green pipeline's top-k list and the baseline's top-k list, divided by min(k, unique green candidates, unique baseline candidates), which equals k whenever both rankings have at least k unique candidates (SC-21: dividing by k would penalise green when the hard filter leaves fewer than k candidates). Because the baseline is scored by a small 3B model, this metric is auxiliary; the main quality metric is precision@k.
 - Candidates eliminated by the hard filter do not appear in the green ranking. So precision@k includes the effect of the filter as well as of the ranking.
 
 ### 7.8 Output

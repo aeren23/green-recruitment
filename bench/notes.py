@@ -130,3 +130,13 @@ def build_measurement_notes(inputs: NotesInputs) -> str:
     }
     pairs = [f"{key}={value}" for key, value in fields.items()]
     return NOTES_SEPARATOR.join([inputs.tracker_notes, *pairs])
+
+
+def parse_measurement_notes(notes: str) -> dict[str, str]:
+    """Split stored notes back into `key -> value` (the first `=` of a pair splits).
+
+    The inverse of `build_measurement_notes` for the `key=value` pairs; a
+    later pair overrides an earlier one with the same key.
+    """
+    pairs = (item.split("=", 1) for item in notes.split(NOTES_SEPARATOR) if "=" in item)
+    return {key: value for key, value in pairs}

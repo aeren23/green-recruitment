@@ -70,7 +70,8 @@ bench/
   green.py           green pipeline runner (uses app/ modules)
   (helpers)          run_command, results, store, notes, pipeline_notes, run_summary, gpu_sampler, cuda_context, environment, llm_timing, idle, baseline_files, estimate
   baseline.py        baseline runner
-  quality.py         precision@k, overlap@k
+  quality.py         precision@k, overlap@k (pure functions)
+  (quality/report)   quality_update (write-back via the store), compare_command, report (build + write), report_model, report_metrics, report_stages, report_k1, report_conditions, report_render
   report.py          JSON + Markdown output
 tests/
 data/                gitignored: dataset, SQLite files, bench outputs

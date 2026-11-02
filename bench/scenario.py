@@ -11,6 +11,7 @@ same applications for the same seed.
 `round` is Python's banker's rounding.
 """
 
+import json
 import random
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -33,6 +34,7 @@ JSON_TOP_K = "top_k"
 JSON_MODELS = "models"
 JSON_EMBEDDING_MODEL = "embedding"
 JSON_LLM_MODEL = "llm"
+JSON_COMPACT_SEPARATORS = (",", ":")
 
 
 class ScenarioConfigError(ValueError):
@@ -186,3 +188,11 @@ def scenario_json(config: ScenarioConfig) -> dict[str, Any]:
         JSON_MODELS: dict(sorted(models.items())),
     }
     return dict(sorted(fields.items()))
+
+
+def scenario_key(scenario: Mapping[str, Any]) -> str:
+    """Canonical JSON text of a stored `scenario_json`, identical for equal scenarios.
+
+    `bench compare` groups runs by this key (SC-11).
+    """
+    return json.dumps(scenario, sort_keys=True, separators=JSON_COMPACT_SEPARATORS)

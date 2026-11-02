@@ -17,6 +17,7 @@ from bench.dataset import (
     compute_dataset_stats,
     iter_resume_records,
 )
+from bench.compare_command import register_compare
 from bench.idle import register_idle
 from bench.parse_report import register_parse_report
 from bench.run_command import register_run
@@ -72,6 +73,7 @@ def register_dataset_stats(
 
 
 COMMAND_REGISTRARS: tuple[SubparserRegistrar, ...] = (
+    register_compare,
     register_dataset_stats,
     register_idle,
     register_parse_report,

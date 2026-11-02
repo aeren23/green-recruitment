@@ -65,7 +65,7 @@ For the large tasks (T-03, T-09, T-10, T-13, T-14), first produce a plan in plan
   - `bench/baseline.py`: SPEC §7.4. Same scenario and same seed.
   - Acceptance: `bench run --pipeline baseline --n 50` runs. Total duration is printed to the console, and an estimated duration for N=300 is shown.
 
-- [ ] **T-11 Quality and report**
+- [x] **T-11 Quality and report**
   - `bench/quality.py` (precision@k, overlap@k) and `bench/report.py` (`bench compare` → `report.md`, `report.json`). Mean ± deviation is computed over repeated runs.
   - Acceptance: The report contains the tables in SPEC §7.8.
   - **→ K1: Show me the numbers.**
