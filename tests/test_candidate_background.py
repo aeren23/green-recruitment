@@ -132,7 +132,7 @@ def test_a_failing_background_job_is_logged_without_the_error_text(
     def explode(*args: object, **kwargs: object) -> int:
         raise RuntimeError("CV TEXT THAT MUST NOT BE LOGGED")
 
-    monkeypatch.setattr(background, "fill_top_k_summaries", explode)
+    monkeypatch.setattr(background, "refresh_top_k_summaries", explode)
     embedder = ControlledEmbedder()
     application = create_app(test_settings, embedder, FakeLlm())
     with TestClient(application, follow_redirects=False) as client, caplog.at_level("INFO"):

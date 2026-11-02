@@ -14,16 +14,21 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm.exc import ObjectDeletedError, StaleDataError
 from starlette.background import BackgroundTask
 
 from app.config import Settings
 from app.green.tracker import StageTracker
 from app.llm.ollama import LlmClient
-from app.pipeline import PipelineContext, fill_top_k_summaries
+from app.pipeline import PipelineContext
+from app.pipeline.summaries import refresh_top_k_summaries
 from app.scoring.embed import EmbeddingProvider
 from app.web.dependencies import WebContext
 
 logger = logging.getLogger(__name__)
+
+MAX_REFRESH_ATTEMPTS = 2
+RETRYABLE_REFRESH_ERRORS = (StaleDataError, ObjectDeletedError)
 
 
 @dataclass(frozen=True)
@@ -40,25 +45,65 @@ class SummaryRefreshJob:
 
 
 def refresh_summaries(job: SummaryRefreshJob) -> None:
-    """Write the missing top-k summaries of the job's postings, in a new session."""
+    """Write the missing top-k summaries of the job's postings, in a new session.
+
+    A concurrent delete or re-score can make a row stale mid-refresh; the whole
+    refresh is then retried once. Summaries already committed are skipped by the retry.
+    """
     with job.session_factory() as session:
-        context = PipelineContext(
-            session=session,
-            settings=job.settings,
-            embedder=job.embedder,
-            tracker=job.tracker,
-            now=job.now,
-            reference_date=job.now.date(),
-            llm_client=job.llm_client,
-        )
+        context = build_refresh_context(session, job)
+        written = run_refresh_attempts(session, context, job)
+    if written is not None:
+        logger.info("Summary refresh for postings %s wrote %d summaries", list(job.job_ids), written)
+
+
+def build_refresh_context(session: Session, job: SummaryRefreshJob) -> PipelineContext:
+    """The pipeline context of one refresh, bound to the job's own session."""
+    return PipelineContext(
+        session=session,
+        settings=job.settings,
+        embedder=job.embedder,
+        tracker=job.tracker,
+        now=job.now,
+        reference_date=job.now.date(),
+        llm_client=job.llm_client,
+    )
+
+
+def run_refresh_attempts(
+    session: Session, context: PipelineContext, job: SummaryRefreshJob
+) -> int | None:
+    """Run the refresh, retrying once after a stale-row conflict.
+
+    Returns:
+        The number of summaries written, or `None` when the refresh gave up.
+    """
+    for attempt in range(1, MAX_REFRESH_ATTEMPTS + 1):
         try:
-            written = fill_top_k_summaries(context, job.job_ids)
-            session.commit()
+            return refresh_top_k_summaries(context, job.job_ids)
+        except RETRYABLE_REFRESH_ERRORS as error:
+            session.rollback()
+            if attempt < MAX_REFRESH_ATTEMPTS:
+                logger.warning(
+                    "Summary refresh for postings %s retrying after %s",
+                    list(job.job_ids),
+                    type(error).__name__,
+                )
+                continue
+            log_refresh_failure(job, error)
+            return None
         except Exception as error:  # noqa: BLE001 - after the response nobody can be told
             session.rollback()
-            logger.error("Summary refresh failed: %s", type(error).__name__)
-            return
-    logger.info("Summary refresh for postings %s wrote %d summaries", list(job.job_ids), written)
+            log_refresh_failure(job, error)
+            return None
+    return None
+
+
+def log_refresh_failure(job: SummaryRefreshJob, error: Exception) -> None:
+    """Log the failed refresh by posting ids and exception class only (KVKK)."""
+    logger.error(
+        "Summary refresh failed for postings %s: %s", list(job.job_ids), type(error).__name__
+    )
 
 
 def schedule_summary_refresh(
