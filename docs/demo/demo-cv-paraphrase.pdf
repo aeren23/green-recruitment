@@ -1,0 +1,76 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1026 >>
+stream
+BT
+/F1 12 Tf
+14 TL
+50 750 Td
+(Deniz Sample) Tj
+T*
+(deniz.sample@example.com  +90 555 011 20 31) Tj
+T*
+(Denizli, Turkey) Tj
+T*
+(Summary) Tj
+T*
+(Software engineer with five years of experience building server-side services) Tj
+T*
+(for mobile and web clients. Owns systems from design to production.) Tj
+T*
+(Experience) Tj
+T*
+(Senior Software Engineer, Fictional Cloud, 2023 - Present) Tj
+T*
+(Designed HTTP endpoints for mobile clients with Spring Boot and Java.) Tj
+T*
+(Modelled PostgreSQL tables and tuned slow queries. Ran the services on) Tj
+T*
+(Kubernetes on AWS with automated deployments and monitoring.) Tj
+T*
+(Software Engineer, Sample Platforms, 2021 - 2023) Tj
+T*
+(Wrote server-side services in Java that exchange JSON with client) Tj
+T*
+(applications, and added integration tests for every service.) Tj
+T*
+(Education) Tj
+T*
+(BSc Computer Engineering, Example University, 2016 - 2020) Tj
+T*
+(Skills) Tj
+T*
+(Java, Spring Boot, PostgreSQL, Kubernetes, AWS, Git, Maven) Tj
+T*
+(Languages) Tj
+T*
+(English, Turkish) Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001319 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1389
+%%EOF

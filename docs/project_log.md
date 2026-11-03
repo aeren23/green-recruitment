@@ -251,3 +251,10 @@
 * **Details/Decisions:** The projection is computed at render time from the group metric rows (per-application mean times 1,000,000; Wh to kWh, g to kg, M excluded) and rendered as its own section per scenario group. Scenario A (runs 7-12) is the final measurement; the default scenario at N=300 was dropped by the user because of thermal throttling and time, so the report relies on K1 for it (deviation from "3 repeats each", stated openly). Scenario A: net per application -67.7%, K1 PASS on all four criteria; projection net 22.30 vs 7.20 kWh per year. Active storage before retention is larger for green (+26%).
 * **Issues & Resolutions:** None. `bench compare` only read the DB; no measurement run was started. Full pytest: 1075 passed.
 ---
+---
+### [2026-11-03 14:00:00] — Claude Code
+* **Action/Task:** Added four fictional demo CVs (paraphrase, keywords, frontend, junior) and a Turkish README for the employer ranking demo.
+* **Files Affected:** `docs/demo/make_demo_cv.py`, `docs/demo/demo-cv-paraphrase.pdf`, `docs/demo/demo-cv-keywords.pdf`, `docs/demo/demo-cv-frontend.pdf`, `docs/demo/demo-cv-junior.pdf`, `docs/demo/README.md`, `docs/project_log.md`.
+* **Details/Decisions:** The generator now holds a tuple of named CV specs; `demo-cv.pdf` content is unchanged. Verified with the real embedding model on a temporary SQLite database (seed with demo filters, `submit_upload` and `confirm_draft`, no LLM): demo-cv 0.855 rank 1, paraphrase 0.840 rank 2, frontend 0.818 rank 3, keywords 0.780 rank 4, junior eliminated by MIN_YEARS (1.8 years). No scoring code or weights changed; first draft of the texts already gave the wanted order. Score spread is narrow because the model compresses similarities.
+* **Issues & Resolutions:** None. Full pytest: 1075 passed. Temporary database deleted.
+---
