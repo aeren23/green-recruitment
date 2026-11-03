@@ -165,7 +165,7 @@ Değerlendirme iki senaryoda yapıldı; ikisinde de Dengeli güç planı ve priz
 | Başvuru başına brüt enerji | 0,08358 Wh | 0,02780 Wh | −%66,7 |
 | LLM çağrısı | 300 | 60 | −%80,0 |
 | Retention sonrası depolama | 9.657.837 B | 212.992 B | −%97,8 |
-| precision@10 (eşik 0,767) | 0,900 | 0,867 | −0,033 |
+| precision@10 (eşik 0,767) | 0,867 | 0,900 | +0,033 |
 
 ### Varsayılan senaryo (K1, N=50, `jobs_per_cv=2`, `resubmit_rate=0.1`; 111 başvuru, 3 tekrar)
 

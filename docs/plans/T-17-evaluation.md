@@ -19,7 +19,7 @@ Varsayılan senaryo N=300'de **koşulmadı**. 2026-11-03'te kullanıcı, ısıl 
 | Başvuru başına net enerji | 0,02230 ± 0,00132 Wh | 0,00720 ± 0,00043 Wh | −%67,7 | GEÇTİ |
 | LLM çağrısı | 300 | 60 | −%80,0 | GEÇTİ |
 | Retention sonrası depolama | 9.657.837 B | 212.992 B | −%97,8 | GEÇTİ |
-| `precision@10` (eşik: baseline − 0,10 = 0,767) | 0,900 | 0,867 | −0,033 | GEÇTİ |
+| `precision@10` (eşik: baseline − 0,10 = 0,767) | 0,867 | 0,900 | +0,033 | GEÇTİ |
 
 **K1: dört ölçütün hepsinde GEÇTİ.**
 
