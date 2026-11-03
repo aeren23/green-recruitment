@@ -244,3 +244,10 @@
 * **Files Affected:** `README.md` (created), `docs/TASKS.md` (T-18 ticked), `docs/project_log.md` (appended). Read: `docs/TASKS.md`, `docs/CLAUDE.md`, `docs/SPEC.md`, `docs/plans/K1-evaluation.md`, `docs/plans/K1-report.md`, `docs/plans/measurement-gate.md`, `docs/plans/dataset-findings.md`, `.env.example`, `pyproject.toml`, `bench/__main__.py`.
 * **Details/Decisions:** Power-measurement limitation written as Windows EMI (RAPL) for CPU, not TDP, because measurement-gate.md (T-05) replaced the TDP assumption in SPEC section 11 and T-18 wording. K1 numbers copied from K1-report.md (N=50, 111 applications). Demo CV path checked to exist (docs/demo/demo-cv.pdf). No numbers beyond the docs were used.
 * **Issues & Resolutions:** None
+---
+### [2026-11-03 12:00:00] — Claude Code
+* **Action/Task:** T-17: added the 1-million-applications projection to the generated report, regenerated the report, and wrote the final evaluation.
+* **Files Affected:** `bench/report_projection.py` (new), `bench/report_render.py`, `tests/test_bench_projection.py` (new), `docs/plans/T-17-report.md` (new), `docs/plans/T-17-evaluation.md` (new), `README.md`, `docs/TASKS.md`, `docs/project_log.md`.
+* **Details/Decisions:** The projection is computed at render time from the group metric rows (per-application mean times 1,000,000; Wh to kWh, g to kg, M excluded) and rendered as its own section per scenario group. Scenario A (runs 7-12) is the final measurement; the default scenario at N=300 was dropped by the user because of thermal throttling and time, so the report relies on K1 for it (deviation from "3 repeats each", stated openly). Scenario A: net per application -67.7%, K1 PASS on all four criteria; projection net 22.30 vs 7.20 kWh per year. Active storage before retention is larger for green (+26%).
+* **Issues & Resolutions:** None. `bench compare` only read the DB; no measurement run was started. Full pytest: 1075 passed.
+---

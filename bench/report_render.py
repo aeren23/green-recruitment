@@ -22,6 +22,11 @@ from bench.report_model import (
     StageRow,
     Summary,
 )
+from bench.report_projection import (
+    PROJECTED_APPLICATIONS_PER_YEAR,
+    ProjectionRow,
+    build_projection,
+)
 from bench.report_stages import APPROXIMATE_BELOW_MS
 from bench.scenario import JSON_COMPACT_SEPARATORS
 
@@ -37,6 +42,13 @@ STAGE_COUNT_DECIMALS = 1
 MS_DECIMALS = 1
 SHARE_DECIMALS = 3
 IDLE_DECIMALS = 2
+PROJECTION_DECIMALS = 2
+PROJECTION_HEADING = "### Yılda 1 milyon başvuru projeksiyonu (tahmin)"
+PROJECTION_NOTE = (
+    "Bu, bu dizüstünün donanımında ve bu senaryoda başvuru başına ortalamaların "
+    "doğrusal ekstrapolasyonudur. Tasarruf, ilan başına başvuru sayısına bağlıdır "
+    "(LLM yalnızca ilk k adaylar için çağrılır); bu yüzden bir tahmindir, ölçüm değildir."
+)
 NO_QUALITY_NOTES = "Dışlanan ilan veya eşleşmemiş koşu yok."
 QUALITY_NOTES_HEADING = "## Kalite notları"
 
@@ -190,6 +202,31 @@ def render_k1(k1: K1Evaluation) -> list[str]:
     ]
 
 
+def projection_cells(row: ProjectionRow) -> list[str]:
+    """The cells of one projection row."""
+    return [
+        row.label,
+        format_number(row.baseline, PROJECTION_DECIMALS),
+        format_number(row.green, PROJECTION_DECIMALS),
+        format_difference(row.difference_pct),
+    ]
+
+
+def render_projection(rows: Sequence[ProjectionRow]) -> list[str]:
+    """The yearly projection section of one group (an estimate, not a measurement)."""
+    header = ["yearly total", "baseline", "green", "difference %"]
+    return [
+        PROJECTION_HEADING,
+        "",
+        f"Başvuru sayısı: {PROJECTED_APPLICATIONS_PER_YEAR:,} / yıl.",
+        "",
+        *table(header, [projection_cells(row) for row in rows]),
+        "",
+        PROJECTION_NOTE,
+        "",
+    ]
+
+
 CONDITION_HEADER = (
     "run",
     "pipeline",
@@ -281,6 +318,7 @@ def render_group(index: int, group: GroupReport) -> list[str]:
         *render_stage_table("baseline", group.stages.baseline),
         *render_stage_table("green", group.stages.green),
         *render_k1(group.k1),
+        *render_projection(build_projection({row.key: row for row in group.metrics})),
         *render_conditions(group.conditions),
     ]
 

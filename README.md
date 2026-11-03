@@ -153,9 +153,21 @@ Komutlar:
 
 Çıktılar `data/bench/` altına yazılır: `bench.db` (koşular ve aşama ölçümleri), `report.md` ve `report.json` (karşılaştırma), `idle_power.json` (boşta güç), `baseline_store/` (baseline'ın PDF deposu). `data/` git dışındadır.
 
-## Sonuçlar (K1, N=50)
+## Sonuçlar
 
-K1 değerlendirmesi 111 başvuru üzerinde yapıldı (bunların 11'i tekrar başvuruydu), Dengeli güç planı ve prizde çalışma koşulunda. Önceden belirlenen dört ölçütün sonuçları:
+Değerlendirme iki senaryoda yapıldı; ikisinde de Dengeli güç planı ve prizde çalışma koşulu vardı. Ölçütler önceden belirlenmişti (K1) ve ikisinde de dördü geçti.
+
+### Senaryo A (N=300, `jobs_per_cv=1`, `resubmit_rate=0`; 300 başvuru, 3 tekrar)
+
+| Ölçüt | Baseline | Yeşil | Fark |
+|---|---|---|---|
+| Başvuru başına net enerji | 0,02230 ± 0,00132 Wh | 0,00720 ± 0,00043 Wh | −%67,7 |
+| Başvuru başına brüt enerji | 0,08358 Wh | 0,02780 Wh | −%66,7 |
+| LLM çağrısı | 300 | 60 | −%80,0 |
+| Retention sonrası depolama | 9.657.837 B | 212.992 B | −%97,8 |
+| precision@10 (eşik 0,767) | 0,900 | 0,867 | −0,033 |
+
+### Varsayılan senaryo (K1, N=50, `jobs_per_cv=2`, `resubmit_rate=0.1`; 111 başvuru, 3 tekrar)
 
 | Ölçüt | Kural | Baseline | Yeşil | Fark | Sonuç |
 |---|---|---|---|---|---|
@@ -164,9 +176,11 @@ K1 değerlendirmesi 111 başvuru üzerinde yapıldı (bunların 11'i tekrar baş
 | Retention sonrası depolama | yeşil < baseline | 3.777.982 B | 147.456 B | −%96,1 | GEÇTİ |
 | precision@10 | yeşil ≥ baseline − 0,10 (eşik 0,40) | 0,500 | 0,600 | +0,10 | GEÇTİ |
 
-Diğer sonuçlar: başvuru başına brüt enerji 0,0407 Wh'den 0,0272 Wh'ye (−%33,3), süre −%34,3, overlap@10 0,50.
+Senaryo A'da tasarruf daha büyüktür, çünkü ilan başına yaklaşık 100 başvuru vardır ve LLM yalnızca ilk k aday için çağrılır; K1'de ilan başına yaklaşık 37 başvuru vardı.
 
-Nihai N=300 sonuçları T-17'de yayımlanacaktır.
+**Yıllık 1 milyon başvuru projeksiyonu (tahmin, ölçüm değil):** Senaryo A için net enerji yaklaşık 22,30 kWh'ye karşı 7,20 kWh. Doğrusal ekstrapolasyondur; bu dizüstü ve bu senaryo için geçerlidir.
+
+Ayrıntılar: `docs/plans/T-17-evaluation.md`.
 
 ## Sınırlılıklar
 
@@ -178,7 +192,10 @@ Nihai N=300 sonuçları T-17'de yayımlanacaktır.
 - **Kısa aşamalar:** Yaklaşık 100 ms'den kısa aşamaların (`hash`, `filter`, `score`, `rank`) enerjisi yaklaşıktır. GPU sayacı kabaca 100 ms adımlarla güncellenir. Karşılaştırmada toplam esas alınmalıdır.
 - **Ölçüm maliyeti:** İzleyici ve NVML okuma maliyeti green hattı biraz cezalandırır. Örneğin `extract` çağrısı başına 290 ms (yeşil) ve 270 ms (baseline). Bu nedenle sonuçlar muhafazakâr yönde yorumlanmalıdır.
 - **GPU enerjisi:** Aşama toplamları, koşu boyunca ölçülen GPU enerjisinin yaklaşık %3 ile %6'sını kaçırıyor (K1: %94,4 ile %97,1 yakalandı).
-- **LLM süresi:** Yeşil hattın LLM aşaması koşudan koşuya değişiyor (toplam süre 114 ile 199 s). Nedeni doğrulanmadı; T-17'de araştırılacak.
+- **LLM süresi:** Yeşil hattın LLM aşaması K1'de koşudan koşuya değişti (toplam süre 114 ile 199 s). T-17'deki ısıl kısıtlama gözlemi bunun büyük olasılıkla ısıl kısıtlamadan kaynaklandığını gösteriyor; tam olarak kanıtlanmış değildir.
+- **Isıl kısıtlama:** Senaryo A koşuları eşit olmayan ısıl koşullarda yapıldı (dizüstü yatağın üzerindeydi, run 11–12'de fan vardı). Net enerji kararlı kaldı (yaklaşık ±%6), ama süre ve brüt enerji tekrarlar arasında çok değişti.
+- **Varsayılan senaryo:** Yalnızca N=50'de ölçüldü; N=300'de koşulmadı.
+- **Aktif depolama:** Retention öncesi aktif depolama yeşil hatta baseline'dan büyüktür (Senaryo A: 12.169.216 B'a karşı 9.657.837 B, +%26), çünkü bölüm embedding'leri ve SQLite sayfaları saklanır. Kazanç retention sonrası ortaya çıkar.
 - **`min_years` filtresi:** Veri setinde medyan deneyim 12 yıl olduğundan filtre nadiren eler (K1'de 4 başvuru). Kalite farkı büyük ölçüde sıralamadan gelir.
 - **Veri seti:** Veri seti anonimleştirilmiştir; ad ve iletişim bilgileri şablon yer tutucularıyla değiştirilmiştir. İletişim bilgisi çıkarımı yalnızca sentetik testlerle doğrulanmıştır. Veri seti Türkçe içermez; Türkçe başlıklar da yalnızca sentetik testlerle sınanır.
 - **Önbellek gizliliği:** Parse önbelleği `raw_hash` ile anahtarlanır. Aynı PDF'e sahip herkes, önceki onaylı profili ön izlemede görebilir. Bu, SPEC §6.2'deki hash tasarımının bilinen bir sonucudur.
@@ -192,3 +209,5 @@ Dizin yapısı `docs/CLAUDE.md` içindeki "Layout" bölümünde açıklanmışt�
 - `docs/plans/dataset-findings.md`: veri seti bulguları ve ayrıştırma çıkarımları
 - `docs/plans/K1-evaluation.md`: K1 değerlendirmesi (N=50)
 - `docs/plans/K1-report.md`: K1 benchmark raporu
+- `docs/plans/T-17-evaluation.md`: nihai değerlendirme (Senaryo A, N=300) ve projeksiyon
+- `docs/plans/T-17-report.md`: nihai benchmark raporu
